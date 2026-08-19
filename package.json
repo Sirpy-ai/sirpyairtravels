@@ -1,0 +1,17 @@
+{
+  "name": "sirpyairtravels",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Sirpy Air Travels — static website for sirpyairtravels.com",
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 8123",
+    "serve": "npx --yes serve . -l 8123",
+    "images": "node tools/optimize-images.mjs",
+    "pages": "node tools/build-pages.mjs"
+  },
+  "comments": {
+    "no-build": "This is a plain static site. There is deliberately no build script, so Vercel serves the repository root as-is with no install or compile step.",
+    "tools": "The images/pages scripts are local maintenance helpers and need sharp: npm i sharp. They are not run during deployment."
+  }
+}
