@@ -21,6 +21,12 @@
     }
   ],
   "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.sirpyairtravels.com" }],
+      "destination": "https://sirpyairtravels.com/:path*",
+      "permanent": true
+    },
     { "source": "/home", "destination": "/", "permanent": true },
     { "source": "/packages", "destination": "/tours", "permanent": true },
     { "source": "/blog", "destination": "/news", "permanent": true }

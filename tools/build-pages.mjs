@@ -53,6 +53,63 @@ const topFor = (isHome) => isHome ? CHROME_TOP : CHROME_TOP
   .replace(/href="#offers"/g, 'href="#offers"')
   .replace(/href="#enquiry"/g, 'href="#enquiry"');
 
+/* Structured data. Google reads this to link the site to the real business —
+   address, phone numbers, opening hours and social profiles. Applied to the
+   home and contact pages, which are the pages that represent the business. */
+const BUSINESS_LD = `
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TravelAgency",
+  "@id": "https://sirpyairtravels.com/#organization",
+  "name": "Sirpy Air Travels",
+  "url": "https://sirpyairtravels.com/",
+  "logo": "https://sirpyairtravels.com/assets/img/logo-icon.png",
+  "image": "https://sirpyairtravels.com/assets/img/banners/air-india-special-fare-1600.jpg",
+  "description": "Flight booking, domestic and international tour packages, visa and passport assistance, cruise bookings and car rentals, with counters in Trichy and a Singapore desk.",
+  "email": "Sirpytravels@gmail.com",
+  "telephone": "+91-93440-20864",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "JR Complex, Near MIET College, Guntur, Trichy to Pudukottai Main Road",
+    "addressLocality": "Tiruchirappalli",
+    "addressRegion": "Tamil Nadu",
+    "addressCountry": "IN"
+  },
+  "contactPoint": [
+    {
+      "@type": "ContactPoint",
+      "telephone": "+91-93440-20864",
+      "contactType": "reservations",
+      "areaServed": "IN",
+      "availableLanguage": ["en", "ta"]
+    },
+    {
+      "@type": "ContactPoint",
+      "telephone": "+65-8260-2446",
+      "contactType": "reservations",
+      "areaServed": "SG",
+      "availableLanguage": ["en", "ta"]
+    }
+  ],
+  "openingHoursSpecification": {
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+    "opens": "09:00",
+    "closes": "21:00"
+  },
+  "areaServed": [
+    { "@type": "Country", "name": "India" },
+    { "@type": "Country", "name": "Singapore" }
+  ],
+  "sameAs": [
+    "https://www.facebook.com/sirpyairtravels/",
+    "https://www.instagram.com/sirpyairtravels/",
+    "https://www.youtube.com/@sirpyairtravels"
+  ]
+}
+</script>`;
+
 const DIVIDER =
   '<div class="divider" aria-hidden="true">' +
   '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4 4 5-7 5 7 4-4v10H3z"/></svg>' +
@@ -77,7 +134,7 @@ function pageHead(title, intro, crumb) {
 `;
 }
 
-function shell({ file, title, description, body }) {
+function shell({ file, title, description, body, ogImage, extraHead, noIndex }) {
   const isHome = file === 'index.html';
   return `<!doctype html>
 <html lang="en">
@@ -88,15 +145,24 @@ function shell({ file, title, description, body }) {
 <meta name="description" content="${description}">
 <meta name="theme-color" content="#1B0F3B">
 <link rel="icon" href="/assets/img/logo-icon.png">
-<link rel="canonical" href="${SITE_URL}${CLEAN_PATH[file] || '/'}">
+${noIndex ? '<meta name="robots" content="noindex, follow">' : `<link rel="canonical" href="${SITE_URL}${CLEAN_PATH[file] || '/'}">`}
 <meta property="og:url" content="${SITE_URL}${CLEAN_PATH[file] || '/'}">
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Sirpy Air Travels">
+<meta property="og:locale" content="en_IN">
+<meta property="og:image" content="${SITE_URL}/assets/img/banners/${ogImage || 'air-india-special-fare'}-1600.jpg">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="893">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="${description}">
+<meta name="twitter:image" content="${SITE_URL}/assets/img/banners/${ogImage || 'air-india-special-fare'}-1600.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Marcellus&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/royal.css">
+<link rel="stylesheet" href="/assets/css/royal.css">${extraHead || ''}
 </head>
 <body>
 ${topFor(isHome)}
@@ -655,28 +721,99 @@ const termsBody = pageHead(
   </section>
 `;
 
+const notFoundBody = `  <section class="page-head">
+    <div class="wrap">
+      <p class="eyebrow" style="color:var(--gold-400)">Error 404</p>
+      <h1 class="gold-text">This Page Has Taken a Detour</h1>
+      <p>The page you were looking for does not exist, or it may have moved. Let us get you back on route.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Where would you like to go?</h2>
+        ${DIVIDER}
+        <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:6px">
+          <a class="btn btn-gold" href="/">Back to Home</a>
+          <a class="btn btn-royal" href="/tours">Browse Tour Packages</a>
+          <a class="btn btn-outline-dark" href="/contact">Contact Us</a>
+        </div>
+      </div>
+
+      <div class="grid-4" style="margin-top:40px">
+        <article class="card">
+          <span class="card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 16l20-7-3.5 9.5-4-2.5-3 3-1-4z"/><path d="M6.5 13.5 2 12l20-7"/></svg></span>
+          <h3>Flight Booking</h3>
+          <p>Domestic and international ticketing with special agent fares.</p>
+          <div class="card-actions">
+            <a class="btn btn-wa btn-sm" href="${wa('Hi Sirpy Air Travels, I need a flight booking. Please share fares.')}" target="_blank" rel="noopener">Enquire</a>
+          </div>
+        </article>
+        <article class="card">
+          <span class="card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></span>
+          <h3>Tour Packages</h3>
+          <p>Domestic circuits, international holidays and temple trails.</p>
+          <div class="card-actions">
+            <a class="btn btn-outline-dark btn-sm" href="/tours">View Packages</a>
+          </div>
+        </article>
+        <article class="card">
+          <span class="card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="m9 15 2 2 4-4"/></svg></span>
+          <h3>Visa &amp; Passport</h3>
+          <p>Tourist and business visas, applications and renewals.</p>
+          <div class="card-actions">
+            <a class="btn btn-wa btn-sm" href="${wa('Hi Sirpy Air Travels, I need visa or passport assistance.')}" target="_blank" rel="noopener">Enquire</a>
+          </div>
+        </article>
+        <article class="card">
+          <span class="card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          <h3>Talk to Us</h3>
+          <p>Our desk replies on WhatsApp, usually within the hour.</p>
+          <div class="card-actions">
+            <a class="btn btn-wa btn-sm" href="${wa('Hi Sirpy Air Travels, I have a question about travel booking.')}" target="_blank" rel="noopener">Chat Now</a>
+            <a class="btn btn-outline-dark btn-sm" href="tel:+919344020864">Call</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+`;
+
 /* ---------- Emit ---------- */
 const PAGES = [
   {
+    file: '404.html',
+    title: 'Page Not Found | Sirpy Air Travels',
+    description: 'That page does not exist. Browse our tour packages, flight booking and visa services, or contact the Sirpy Air Travels desk.',
+    noIndex: true,
+    body: notFoundBody
+  },
+  {
     file: 'tours.html',
+    ogImage: 'scoot-boarding-pass',
     title: 'Tour Packages | Sirpy Air Travels — Domestic, International, Pilgrimage &amp; Cruise',
     description: 'Browse Sirpy Air Travels holiday packages — Singapore, Malaysia, Bali, Dubai, Thailand, Kashmir, Kerala, temple trails, cruises and group departures.',
     body: toursBody
   },
   {
     file: 'news.html',
+    ogImage: 'indigo-special-offer',
     title: 'News &amp; Updates | Sirpy Air Travels',
     description: 'Route additions, fare movements, visa rule changes and seasonal travel offers from the Sirpy Air Travels desk in Trichy and Singapore.',
     body: newsBody
   },
   {
     file: 'article.html',
+    ogImage: 'indigo-special-offer',
     title: 'Extra Trichy–Singapore frequencies released for the season | Sirpy Air Travels',
     description: 'Additional weekly services have opened on the Trichy–Singapore sector. What it means for fares, group travel and booking timing.',
     body: articleBody
   },
   {
     file: 'contact.html',
+    ogImage: 'travel-together-group',
+    extraHead: BUSINESS_LD,
     title: 'Contact Us | Sirpy Air Travels — Trichy &amp; Singapore',
     description: 'Call our Trichy counter or Singapore desk, email us, or send an enquiry and we will reply on WhatsApp. Open Monday to Sunday, 9 AM to 9 PM.',
     body: contactBody
