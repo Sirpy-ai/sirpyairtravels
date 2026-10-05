@@ -1,0 +1,85 @@
+<!-- {"title": "Booking Request — Traveller Details", "description": "Enter traveller details and send your flight booking request to Sirpy Air Travels.", "nav": "flights", "scripts": ["booking"], "noindex": true, "nofooterCta": true} -->
+<nav class="steps" aria-label="Booking steps">
+  <div class="wrap">
+    <span class="step done"><i>1</i>Flight selected</span>
+    <span class="step current"><i>2</i>Traveller details</span>
+    <span class="step"><i>3</i>Review</span>
+    <span class="step"><i>4</i>Request sent</span>
+  </div>
+</nav>
+
+<div class="wrap book-layout" id="bookApp">
+  <div>
+    <section class="card panel">
+      <header><h2 id="bookTitle">Loading your flight…</h2><a class="btn btn-ghost btn-sm" href="javascript:history.back()">Change flight</a></header>
+      <div class="panel-body" id="tripSummary"><p class="loading">Loading…</p></div>
+    </section>
+
+    <form id="bookForm" novalidate>
+      <div id="stepDetails">
+        <section class="card panel">
+          <header><h2><span class="num">1</span>Traveller details</h2></header>
+          <div class="panel-body">
+            <p class="notice">Enter names <b>exactly as on the passport</b>. Airlines charge to correct names after ticketing.</p>
+            <div id="paxForms"></div>
+          </div>
+        </section>
+
+        <section class="card panel">
+          <header><h2><span class="num">2</span>Contact details</h2></header>
+          <div class="panel-body">
+            <p class="search-note">{{icon:info}}Your ticket and updates will be sent here.</p>
+            <div class="form-grid">
+              <div class="f c-12"><label for="cName">Contact name</label><input id="cName" autocomplete="name" required><span class="err"></span></div>
+              <div class="f c-6"><label for="cPhone">Mobile / WhatsApp</label>
+                <div class="phone-row">
+                  <select id="cCode" aria-label="Country code"><option value="+91">🇮🇳 +91</option><option value="+65">🇸🇬 +65</option><option value="+60">🇲🇾 +60</option><option value="+94">🇱🇰 +94</option><option value="+971">🇦🇪 +971</option></select>
+                  <input id="cPhone" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="98765 43210">
+                </div><span class="err"></span></div>
+              <div class="f c-6"><label for="cEmail">Email</label><input id="cEmail" type="email" autocomplete="email" required placeholder="you@example.com"><span class="err"></span></div>
+              <div class="f c-12"><label for="cNotes">Special requests <span class="opt">(optional)</span></label><textarea id="cNotes" rows="3" placeholder="Extra baggage, meals, wheelchair, return date…"></textarea></div>
+            </div>
+            <label class="agree"><input type="checkbox" id="cAgree" required><span>I understand this is a <b>booking request</b>: the fare is indicative and Sirpy Air Travels will reconfirm the live fare and payment with me before issuing tickets. I agree to the <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.</span></label>
+            <p class="err" id="agreeErr" style="color:var(--danger);font-size:12.5px;margin:-8px 0 12px"></p>
+            <button class="btn btn-yellow btn-lg btn-block" type="submit">Continue to review {{icon:arrowR}}</button>
+          </div>
+        </section>
+      </div>
+    </form>
+
+    <section class="card panel" id="stepReview" hidden>
+      <header><h2 tabindex="-1"><span class="num">3</span>Review your request</h2><button class="btn btn-ghost btn-sm" type="button" id="editBtn">Edit details</button></header>
+      <div class="panel-body review">
+        <div id="reviewBody"></div>
+        <p class="notice">When you tap <b>Send booking request</b>, WhatsApp opens with your details ready to send to our team, and a copy is emailed to us. We reply with the confirmed fare and payment options — usually within the hour, 9 AM – 9 PM.</p>
+        <button class="btn btn-wa btn-lg btn-block" type="button" id="sendBtn">{{icon:wa}}Send booking request</button>
+      </div>
+    </section>
+
+    <section class="card panel" id="stepDone" hidden>
+      <div class="success">
+        <div class="tick">{{icon:check}}</div>
+        <h2>Booking request ready</h2>
+        <p>Your reference number</p>
+        <div class="ref" id="doneRef">—</div>
+        <p>Please press <b>Send</b> in WhatsApp so our team receives it. <span id="doneEmail"></span></p>
+        <div class="acts">
+          <a class="btn btn-wa" id="doneWa" href="#" target="_blank" rel="noopener">{{icon:wa}}Open WhatsApp again</a>
+          <a class="btn btn-ghost" href="tel:+919344020864">{{icon:phone}}Call 93440 20864</a>
+          <a class="btn btn-yellow" href="/flights">Search another flight</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <aside class="book-side">
+    <section class="card panel fare-box">
+      <header><h2>Fare summary</h2></header>
+      <div class="panel-body" id="fareBox"><p class="loading">Loading…</p></div>
+    </section>
+    <div class="help-box">
+      <b>Need help booking?</b>
+      Call <a href="tel:+919344020864">+91 93440 20864</a> (Trichy) or <a href="tel:+6582602446">+65 8260 2446</a> (Singapore), 9 AM – 9 PM.
+    </div>
+  </aside>
+</div>

@@ -1,115 +1,91 @@
 # sirpyairtravels.com
 
-The Sirpy Air Travels website — a plain static site (HTML, CSS, vanilla JS) deployed to Vercel from GitHub.
-
-**There is no build step.** No React, no Vite, no bundler, no `npm install` at deploy time. Vercel serves this repository root exactly as it is, which makes deploys near-instant and impossible to break with a bad build.
+The Sirpy Air Travels website — a plain static site (HTML, CSS, vanilla JS) deployed to Vercel from GitHub. **Vercel has no build step**: it serves the repository root exactly as committed.
 
 ## Pages
 
-| URL | File | Purpose |
-|---|---|---|
-| `/` | `index.html` | Home — hero banner slider, 8 services, featured packages, news, newsletter |
-| `/tours` | `tours.html` | All 12 tour packages with category filters |
-| `/news` | `news.html` | Announcements and updates |
-| `/article` | `article.html` | Article template for a single post |
-| `/contact` | `contact.html` | Enquiry form, offices, map |
-| `/privacy` | `privacy.html` | Privacy Policy |
-| `/terms` | `terms.html` | Terms & Conditions |
+| URL | Purpose |
+|---|---|
+| `/` | Home — hero with sector search, airline offer slider, featured deal blogs, Check PNR & travel links (ICA, MOM), tours, reviews |
+| `/flights` | Flight results from our saved fares — date strip, filters, sort, Book Now |
+| `/book` | Booking request — traveller details → review → send to WhatsApp + email |
+| `/offers` | Special Offers — airline banners with live "from" prices |
+| `/weekly-fares` | Special Fares This Week — cheapest fare per sector for the next 7 days |
+| `/top-fares` | Top 10 Lowest Fares |
+| `/travel-tips` | Travel Tips |
+| `/tours` | 12 tour packages with filters (`/tours#cruise` opens a category) |
+| `/contact`, `/privacy`, `/terms`, `404` | |
 
-URLs are extensionless (`cleanUrls` in `vercel.json`), so every internal link points at `/tours` rather than `/tours.html` and no click costs a redirect.
+`/news`, `/article`, `/blog`, `/packages` and `/search` redirect to the new pages (see `vercel.json`).
 
-## Repository layout
+## Updating fares (do this regularly)
 
-```
-├── index.html … terms.html   The seven pages
-├── assets/
-│   ├── css/royal.css         All styling
-│   ├── js/royal.js           All behaviour
-│   └── img/                  Web-sized banners, pop-up and logos
-├── tools/                    Local maintenance scripts (not deployed)
-├── vercel.json               Clean URLs, cache and security headers, redirects
-├── robots.txt, sitemap.xml   SEO
-└── package.json              Local helper scripts only — no build, no dependencies
-```
-
-## Deploying
-
-Vercel is connected to this GitHub repository. **Pushing to `main` deploys to production.**
+Fares come from the Google Flights scrape CSVs (`flights_SIN_to_TRZ_*.csv` etc.). Drop the new CSVs into the scraper folder, then:
 
 ```bash
-git add -A
-git commit -m "Update site"
+npm run fares
+git add assets/data/fares.json
+git commit -m "Update fares"
 git push
 ```
 
-Pull requests get their own preview URL automatically.
+`npm run fares` reads every `flights_<FROM>_to_<TO>_*.csv` in
+`D:\AI_ORGANIZED\01_MAIN\01_SIRPY_AIR_TRAVELS\2026-09_Flight_Fare_Scrapers\flights\fare_matrix`
+(or a folder you pass: `npm run fares -- "D:\other\folder"`). Only SIN ⇄ TRZ / MAA / CJB are kept. When several files cover the same route and day, the newest file wins. Past dates are dropped.
 
-### Vercel project settings
+The weekly fares, top 10, offer prices and home-page chips all recalculate from this file in the browser, so they update with it.
 
-If you ever set the project up again, use:
+## Pricing settings
 
-| Setting | Value |
-|---|---|
-| Framework Preset | **Other** |
-| Build Command | *(leave empty)* |
-| Output Directory | `.` |
-| Install Command | *(leave empty)* |
-| Node.js Version | default |
+At the top of `assets/js/site.js`:
 
-`vercel.json` already declares `outputDirectory: "."`, so the defaults usually work untouched.
+- `MARKUP_INR: 1000` — added to every adult/child seat.
+- SGD→INR uses today's live rate from open.er-api.com (cached 6 hours per visitor); `FALLBACK_RATE` is used only if that fails.
+- `AIRLINES` — names and the Manage Booking / PNR link for each airline code. Logos load from Google (`gstatic.com/flights/airline_logos/70px/dark/<CODE>.png`), falling back to `dhiz4uvf5rpaq.cloudfront.net/images/airline-logos/<CODE>.jpg`.
+- `ROUTES` — the sectors in the search box.
 
-## Running it locally
+## Booking requests
+
+No payment is taken online. "Send booking request" opens WhatsApp (`919344020864`) with the full booking and also emails it to `Sirpytravels@gmail.com` through FormSubmit.
+
+**One-time step:** the first booking request sent from the live site triggers a FormSubmit activation email to Sirpytravels@gmail.com — click the link in it, or emailed copies will not arrive. (WhatsApp works regardless.)
+
+## Editing pages
+
+Page content lives in `src/pages/*.html`. The shared header, footer and `<head>` live in `tools/build.mjs`. After editing either:
+
+```bash
+npm run build      # writes index.html, flights.html, … into the site root
+```
+
+Commit both `src/` and the generated `.html` files. In fragments, `{{icon:name}}` inserts an icon and `{{wa:message}}` a pre-filled WhatsApp link. `npm run update` runs `fares` then `build`.
+
+## Running locally
 
 ```bash
 npm run serve
 ```
 
-Then open <http://localhost:8123>. This uses `npx serve`, which resolves extensionless URLs the same way Vercel does — so `/tours` works locally too.
+Open <http://localhost:8123>. `serve` resolves extensionless URLs like Vercel, so `/flights` works.
 
-`npm run dev` starts Python's built-in server instead, but it does **not** do clean URLs, so links will 404. Prefer `npm run serve`.
+## Repository layout
 
-## Editing content
-
-The seven `.html` files are ordinary standalone HTML. Edit them directly, commit, push.
-
-The one thing to know: **the shared header, tours panel, drawer, footer, WhatsApp button and pop-up live in `index.html`** and are copied into the other six pages by a script. So:
-
-- Changing a **page's own content** → edit that `.html` file directly.
-- Changing the **header, nav or footer** → edit `index.html`, then run `npm run pages` to propagate it.
-
-```bash
-npm i sharp        # one-time, only needed for the tools below
-npm run pages      # copy header/footer from index.html into the other six pages
 ```
-
-> `npm run pages` **overwrites** the header and footer of the other six pages. Their body
-> content is defined inside `tools/build-pages.mjs`, so edit it there if you re-run the script.
-
-### Replacing banner artwork
-
-`npm run images` regenerates the responsive WebP/JPEG variants from the full-resolution originals. Those originals (~19 MB) are deliberately **not** committed here — only the web-sized output is. Point the script at wherever you keep them:
-
-```bash
-SIRPY_SOURCE_DIR="/path/to/Website" npm run images
+├── *.html                     Generated pages (do not edit by hand — edit src/pages)
+├── src/pages/                 Page content fragments
+├── assets/
+│   ├── css/site.css           All styling
+│   ├── js/site.js             Settings, rates, fares, search box, deals pages
+│   ├── js/booking.js          Flight results + booking request
+│   ├── data/fares.json        Generated by npm run fares
+│   └── img/                   Logo, offer banners, tour and site photos
+├── tools/                     build.mjs, fares-to-json.mjs (not deployed)
+└── vercel.json                Clean URLs, headers, redirects
 ```
-
-It expects `Banner/` (the six 2752×1536 banners plus `pop up.jpeg`) and `public/assets/` (the logos) inside that directory. Running it shrank the artwork from ~19 MB to ~2.8 MB and the header logo from 987 KB to 14 KB.
-
-## Performance
-
-A first mobile page load is roughly **230 KB** of local assets — the first banner is 33 KB, the CSS 40 KB, the JS 24 KB. Banners use `<picture>` with WebP at 640/1000/1600px plus a JPEG fallback; only the first is eager, the rest lazy-load.
-
-## Things worth knowing
-
-- **WhatsApp everywhere.** Every banner, service card, package and form opens `wa.me/919344020864` with a message pre-filled describing exactly what the visitor tapped. To change the number, update it in each `.html` file *and* at the top of `assets/js/royal.js` (`WA_NUMBER`), then re-run `npm run pages`.
-- **The hero banners are shown whole, never cropped.** Each design already has its headline and CTAs baked into the artwork, so the slider uses `object-fit: contain`. Replacing them with a different aspect ratio will letterbox — regenerate at 16:9 for best results.
-- **The visitor counter is per-browser.** A static site has no server, so the footer counter is a `localStorage` count over a seeded figure, labelled "Visits". Real traffic numbers should come from Vercel Web Analytics instead.
-- **The language switcher is wired for English only.** Tamil, Hindi and Malay are listed as "Soon" — add their strings when ready.
-- **The offer pop-up** shows 3.5s after a first visit and stays dismissed for 24 hours.
 
 ## Third-party content
 
-Google Fonts (Cinzel, Marcellus, Plus Jakarta Sans), package and news photography from Unsplash, and an embedded Google Map on the contact page. The banners, pop-up and logos are served locally. Every font has a system fallback declared in the CSS.
+Google Fonts (Poppins), tour/site photography from Unsplash (saved locally), airline logos from Google / CloudFront, exchange rate from ExchangeRate-API, FormSubmit for booking emails, and an embedded Google Map on the contact page.
 
 ## Contact details used throughout
 

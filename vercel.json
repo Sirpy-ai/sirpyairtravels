@@ -11,6 +11,12 @@
       ]
     },
     {
+      "source": "/assets/data/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
@@ -29,6 +35,9 @@
     },
     { "source": "/home", "destination": "/", "permanent": true },
     { "source": "/packages", "destination": "/tours", "permanent": true },
-    { "source": "/blog", "destination": "/news", "permanent": true }
+    { "source": "/blog", "destination": "/offers", "permanent": true },
+    { "source": "/news", "destination": "/offers", "permanent": true },
+    { "source": "/article", "destination": "/travel-tips", "permanent": true },
+    { "source": "/search", "destination": "/flights", "permanent": true }
   ]
 }

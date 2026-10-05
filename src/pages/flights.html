@@ -1,0 +1,77 @@
+<!-- {"title": "Search Flights — Tamil Nadu ⇄ Singapore", "description": "Compare saved fares on Trichy, Chennai and Coimbatore to Singapore flights — Scoot, IndiGo, Air India Express and Singapore Airlines — and send a booking request.", "nav": "flights", "scripts": ["booking"], "nofooterCta": true} -->
+<div class="modify-bar">
+  <div class="wrap">
+    <form class="search-form" data-search>
+      <div class="field field-sector">
+        <label for="sRoute">Sector</label>
+        <select id="sRoute" name="route"></select>
+        <small data-route-hint>&nbsp;</small>
+      </div>
+      <div class="field">
+        <label for="sDate">Departure</label>
+        <input id="sDate" name="date" type="date" required>
+        <small>One way</small>
+      </div>
+      <div class="field">
+        <span class="lbl" id="paxLbl">Travellers</span>
+        <button type="button" class="pax-btn" aria-haspopup="dialog" aria-expanded="false" aria-describedby="paxLbl">1 Traveller</button>
+        <small data-pax-detail>1 Adult · Economy</small>
+        <div class="pax-pop" role="dialog" aria-label="Choose travellers">
+          <div class="pax-row" data-pax="ad"><span><b>Adults</b><small>12+ years</small></span><span class="stepper"><button type="button" aria-label="Fewer adults">−</button><output>1</output><button type="button" aria-label="More adults">+</button></span></div>
+          <div class="pax-row" data-pax="ch"><span><b>Children</b><small>2–11 years</small></span><span class="stepper"><button type="button" aria-label="Fewer children">−</button><output>0</output><button type="button" aria-label="More children">+</button></span></div>
+          <div class="pax-row" data-pax="inf"><span><b>Infants</b><small>Under 2 years</small></span><span class="stepper"><button type="button" aria-label="Fewer infants">−</button><output>0</output><button type="button" aria-label="More infants">+</button></span></div>
+          <button type="button" class="btn btn-dark btn-block btn-sm" data-pax-done>Done</button>
+        </div>
+      </div>
+      <button class="btn btn-yellow btn-lg" type="submit">{{icon:search}}Modify Search</button>
+    </form>
+  </div>
+</div>
+
+<div class="wrap results-layout">
+  <aside class="card filter-panel" id="filters" aria-label="Filters">
+    <header><b>Filters</b><button type="button" id="resetFilters">Reset all</button></header>
+    <div class="fgroup">
+      <h4>Departure time</h4>
+      <div class="time-slots" id="fSlots"></div>
+    </div>
+    <div class="fgroup" id="fOriginsGroup" hidden>
+      <h4 id="fOriginsTitle">Airport</h4>
+      <div id="fOrigins"></div>
+    </div>
+    <div class="fgroup">
+      <h4>Airlines</h4>
+      <div id="fAirlines"></div>
+    </div>
+    <div class="fgroup">
+      <h4>Stops</h4>
+      <label class="check"><input type="checkbox" checked disabled><span>Non-stop</span></label>
+    </div>
+  </aside>
+
+  <div>
+    <div class="date-strip">
+      <button type="button" id="stripPrev" aria-label="Earlier dates">{{icon:chevL}}</button>
+      <div class="dates" id="dates"></div>
+      <button type="button" id="stripNext" aria-label="Later dates">{{icon:chevR}}</button>
+    </div>
+
+    <div class="results-top">
+      <div>
+        <h1 class="h2" id="resultsTitle" style="font-size:18px;margin:0">Loading flights…</h1>
+        <p id="resultsMeta">&nbsp;</p>
+      </div>
+      <button class="btn btn-ghost btn-sm filter-toggle" type="button" id="filterToggle" aria-controls="filters" aria-expanded="false">{{icon:filter}}Filters</button>
+    </div>
+
+    <div class="sort-tabs" role="group" aria-label="Sort flights">
+      <button type="button" data-sort="price" aria-pressed="true"><b>Cheapest</b><small>—</small></button>
+      <button type="button" data-sort="dep" aria-pressed="false"><b>Earliest</b><small>—</small></button>
+      <button type="button" data-sort="dur" aria-pressed="false"><b>Fastest</b><small>—</small></button>
+    </div>
+
+    <div id="results" aria-live="polite"><p class="loading">Loading saved fares…</p></div>
+
+    <p class="disclaimer">Fares are from our saved airline data (last updated <b id="faresUpdated">—</b>) and include taxes and our service fee, shown per adult. INR uses today’s SGD rate. Seats and prices change quickly, so our team reconfirms the live fare with you before ticketing — nothing is charged online.</p>
+  </div>
+</div>
