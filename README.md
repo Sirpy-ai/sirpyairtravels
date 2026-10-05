@@ -18,9 +18,11 @@ The Sirpy Air Travels website — a plain static site (HTML, CSS, vanilla JS) de
 
 `/news`, `/article`, `/blog`, `/packages` and `/search` redirect to the new pages (see `vercel.json`).
 
-## Updating fares (do this regularly)
+## Updating fares
 
-Fares come from the Google Flights scrape CSVs (`flights_SIN_to_TRZ_*.csv` etc.). Drop the new CSVs into the scraper folder, then:
+**Automatic (daily, in the cloud).** `.github/workflows/update-fares.yml` runs on GitHub every day at 06:00 Singapore time. It scrapes Google Flights with `scraper/flight_scraper_v2.py` (SIN ⇄ TRZ / MAA / CJB, non-stop, ~118 days ahead), rebuilds `assets/data/fares.json`, commits it, and Vercel deploys. If the scrape returns under 70% of the current flights or misses a route (e.g. Google blocked the runner), the job fails and nothing is published — the site keeps the previous fares. Check runs under GitHub → **Actions** → *Update fares*; **Run workflow** there starts one immediately.
+
+**Manual (from this PC).** Fares can also come from the local scraper's CSVs (`flights_SIN_to_TRZ_*.csv` etc.). Drop the new CSVs into the scraper folder, then:
 
 ```bash
 npm run fares
