@@ -1,7 +1,7 @@
 /**
  * Sirpy Air Travels — page builder.
  *
- *   npm run build
+ *   npm run pages
  *
  * Wraps every fragment in src/pages/*.html with the shared <head>, top bar,
  * header, mobile drawer, footer and WhatsApp button, and writes the finished

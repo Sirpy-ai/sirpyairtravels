@@ -6,12 +6,12 @@
   "type": "module",
   "scripts": {
     "serve": "npx --yes serve . -l 8123",
-    "build": "node tools/build.mjs",
+    "pages": "node tools/build.mjs",
     "fares": "node tools/fares-to-json.mjs",
     "update": "node tools/fares-to-json.mjs && node tools/build.mjs"
   },
   "comments": {
-    "no-build": "This is a plain static site. Vercel serves the repository root as-is with no install or compile step.",
-    "tools": "build and fares are local helpers with no dependencies. Run them, then commit the generated files."
+    "no-build": "Deliberately no \"build\" script: Vercel would try to run it. This is a plain static site; Vercel serves the repository root as-is with no install or compile step.",
+    "tools": "pages and fares are local helpers with no dependencies. Run them, then commit the generated files."
   }
 }

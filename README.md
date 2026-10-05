@@ -55,10 +55,10 @@ No payment is taken online. "Send booking request" opens WhatsApp (`919344020864
 Page content lives in `src/pages/*.html`. The shared header, footer and `<head>` live in `tools/build.mjs`. After editing either:
 
 ```bash
-npm run build      # writes index.html, flights.html, … into the site root
+npm run pages      # writes index.html, flights.html, … into the site root
 ```
 
-Commit both `src/` and the generated `.html` files. In fragments, `{{icon:name}}` inserts an icon and `{{wa:message}}` a pre-filled WhatsApp link. `npm run update` runs `fares` then `build`.
+Commit both `src/` and the generated `.html` files. In fragments, `{{icon:name}}` inserts an icon and `{{wa:message}}` a pre-filled WhatsApp link. `npm run update` runs `fares` then `pages`. (The script is deliberately not called `build` — Vercel would try to run it on deploy and fail.)
 
 ## Running locally
 
