@@ -133,7 +133,7 @@ jobs:
           fi
           git config user.name "sirpy-ai"
           git config user.email "sirpy08@gmail.com"
-          git add assets/data/fares.json
+          git add assets/data/fares.json assets/data/fares-prev.json
           git commit -m "Update fares $(date +%F)"
           git pull --rebase --quiet
           git push

@@ -22,6 +22,7 @@ const SITE = resolve(HERE, '..');
 const DEFAULT_DIR = 'D:\\AI_ORGANIZED\\01_MAIN\\01_SIRPY_AIR_TRAVELS\\2026-09_Flight_Fare_Scrapers\\flights\\fare_matrix';
 const SRC = process.argv[2] || DEFAULT_DIR;
 const OUT = join(SITE, 'assets', 'data', 'fares.json');
+const PREV = join(SITE, 'assets', 'data', 'fares-prev.json');
 
 /* Only these sectors are sold on the site. */
 const AIRPORTS = ['SIN', 'TRZ', 'MAA', 'CJB'];
@@ -127,6 +128,18 @@ const data = {
 };
 
 await mkdir(dirname(OUT), { recursive: true });
+
+/* Keep the previous day's file for the "top fare changes" block. Only the first
+   update of a new day rotates it, so several runs on one day still compare
+   against yesterday. */
+try {
+  const current = JSON.parse(await readFile(OUT, 'utf8'));
+  if (current.updated && current.updated < data.updated) {
+    await writeFile(PREV, JSON.stringify(current));
+    console.log(`Kept previous fares (${current.updated}) as ${PREV}`);
+  }
+} catch { /* first run: nothing to keep */ }
+
 await writeFile(OUT, JSON.stringify(data));
 
 const byRoute = {};

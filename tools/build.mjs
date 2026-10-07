@@ -83,6 +83,7 @@ const NAV = [
   ['home', '/', 'Home'],
   ['flights', '/flights', 'Flights'],
   ['offers', '/offers', 'Special Offers'],
+  ['diwali', '/diwali-fares', 'Diwali Fares'],
   ['tours', '/tours', 'Tour Packages'],
   ['pnr', '/#pnr', 'Check PNR'],
   ['tips', '/travel-tips', 'Travel Tips'],
@@ -198,17 +199,19 @@ function footer() {
       <div>
         <h4>Flights</h4>
         <ul>
-          <li><a href="/flights?route=TN-SIN">Tamil Nadu → Singapore</a></li>
-          <li><a href="/flights?route=SIN-TN">Singapore → Tamil Nadu</a></li>
+          <li><a href="/flights?route=SIN-TRZ">Singapore → Trichy</a></li>
           <li><a href="/flights?route=TRZ-SIN">Trichy → Singapore</a></li>
+          <li><a href="/flights?route=SIN-TRZ&amp;trip=rt">Singapore ⇄ Trichy return</a></li>
+          <li><a href="/flights?route=SIN-TN">Singapore → Tamil Nadu</a></li>
           <li><a href="/flights?route=SIN-MAA">Singapore → Chennai</a></li>
-          <li><a href="/flights?route=CJB-SIN">Coimbatore → Singapore</a></li>
+          <li><a href="/flights?route=SIN-CJB">Singapore → Coimbatore</a></li>
         </ul>
       </div>
       <div>
         <h4>Explore</h4>
         <ul>
           <li><a href="/offers">Special Offers</a></li>
+          <li><a href="/diwali-fares">Diwali Fares 2026</a></li>
           <li><a href="/weekly-fares">Special Fares This Week</a></li>
           <li><a href="/top-fares">Top 10 Lowest Fares</a></li>
           <li><a href="/travel-tips">Travel Tips</a></li>
@@ -237,6 +240,50 @@ function footer() {
 `;
 }
 
+/* ---------- Shared search box ({{search}} or {{search:Button text}}) ----------
+   Options are filled in by site.js (initSearchForm). */
+const searchForm = (button = 'Search') => `<form class="search-form" data-search>
+  <div class="trip-toggle" role="radiogroup" aria-label="Trip type">
+    <label><input type="radio" name="trip" value="ow" checked><span>One way</span></label>
+    <label><input type="radio" name="trip" value="rt"><span>Round trip</span></label>
+  </div>
+  <div class="search-grid">
+    <div class="field field-from">
+      <label for="sFrom">From</label>
+      <select id="sFrom" name="from"></select>
+      <small>Airport</small>
+    </div>
+    <button type="button" class="swap" data-swap aria-label="Swap from and to">⇄</button>
+    <div class="field field-to">
+      <label for="sTo">To</label>
+      <select id="sTo" name="to"></select>
+      <small data-route-hint>&nbsp;</small>
+    </div>
+    <div class="field">
+      <label for="sDate">Departure</label>
+      <input id="sDate" name="date" type="date" required>
+      <small>Depart date</small>
+    </div>
+    <div class="field field-ret">
+      <label for="sRet">Return</label>
+      <input id="sRet" name="ret" type="date">
+      <small>Tap to add return</small>
+    </div>
+    <div class="field">
+      <span class="lbl" id="paxLbl">Travellers</span>
+      <button type="button" class="pax-btn" aria-haspopup="dialog" aria-expanded="false" aria-describedby="paxLbl">1 Traveller</button>
+      <small data-pax-detail>1 Adult · Economy</small>
+      <div class="pax-pop" role="dialog" aria-label="Choose travellers">
+        <div class="pax-row" data-pax="ad"><span><b>Adults</b><small>12+ years</small></span><span class="stepper"><button type="button" aria-label="Fewer adults">−</button><output>1</output><button type="button" aria-label="More adults">+</button></span></div>
+        <div class="pax-row" data-pax="ch"><span><b>Children</b><small>2–11 years</small></span><span class="stepper"><button type="button" aria-label="Fewer children">−</button><output>0</output><button type="button" aria-label="More children">+</button></span></div>
+        <div class="pax-row" data-pax="inf"><span><b>Infants</b><small>Under 2 years</small></span><span class="stepper"><button type="button" aria-label="Fewer infants">−</button><output>0</output><button type="button" aria-label="More infants">+</button></span></div>
+        <button type="button" class="btn btn-dark btn-block btn-sm" data-pax-done>Done</button>
+      </div>
+    </div>
+    <button class="btn btn-yellow btn-lg search-go" type="submit">${icon('search')}${button}</button>
+  </div>
+</form>`;
+
 /* ---------- Build ---------- */
 const files = (await readdir(PAGES)).filter((f) => f.endsWith('.html'));
 for (const file of files) {
@@ -245,6 +292,7 @@ for (const file of files) {
   if (!m) throw new Error(`${file}: missing JSON header comment`);
   const meta = JSON.parse(m[1]);
   const body = src.slice(m[0].length)
+    .replace(/\{\{search(?::([^}]+))?\}\}/g, (_, label) => searchForm(label))
     .replace(/\{\{icon:([\w]+)\}\}/g, (_, n) => icon(n))
     .replace(/\{\{wa:([^}]+)\}\}/g, (_, msg) => wa(msg));
   const path = file === 'index.html' ? '/' : '/' + file.replace(/\.html$/, '');

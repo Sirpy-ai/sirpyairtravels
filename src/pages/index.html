@@ -1,11 +1,11 @@
-<!-- {"title": "Sirpy Air Travels | Tamil Nadu ⇄ Singapore Flights, Tours & Visa — Trichy", "description": "Search saved agent fares between Trichy, Chennai, Coimbatore and Singapore on Scoot, IndiGo, Air India Express and Singapore Airlines. Book with Sirpy Air Travels, Trichy & Singapore.", "nav": "home", "preload": "<link rel=\"preload\" as=\"image\" href=\"/assets/img/site/hero.webp\" imagesrcset=\"/assets/img/site/hero-800.webp 800w, /assets/img/site/hero.webp 1600w\" imagesizes=\"100vw\">\n"} -->
+<!-- {"title": "Sirpy Air Travels | Tamil Nadu ⇄ Singapore Flights, Tours & Visa — Trichy", "description": "Compare special fares between Trichy, Chennai, Coimbatore and Singapore on Scoot, IndiGo, Air India Express and Singapore Airlines. Book with Sirpy Air Travels, Trichy & Singapore.", "nav": "home", "preload": "<link rel=\"preload\" as=\"image\" href=\"/assets/img/site/hero.webp\" imagesrcset=\"/assets/img/site/hero-800.webp 800w, /assets/img/site/hero.webp 1600w\" imagesizes=\"100vw\">\n"} -->
 <section class="hero">
   <div class="hero-bg">
     <img src="/assets/img/site/hero.webp" srcset="/assets/img/site/hero-800.webp 800w, /assets/img/site/hero.webp 1600w" sizes="100vw" alt="" fetchpriority="high">
   </div>
   <div class="wrap">
     <span class="eyebrow">Trichy · Chennai · Coimbatore ⇄ Singapore</span>
-    <h1>Fly Tamil Nadu ⇄ Singapore at <em>agent fares</em></h1>
+    <h1>Fly Tamil Nadu ⇄ Singapore at <em>special fares</em></h1>
     <p class="hero-sub">Compare Scoot, IndiGo, Air India Express and Singapore Airlines on every TN–Singapore sector, then book with our Trichy &amp; Singapore desks.</p>
     <div class="hero-badges">
       <span>{{icon:shield}}IATA-standard ticketing</span>
@@ -25,31 +25,8 @@
       <a href="{{wa:Hi Sirpy Air Travels, I need a group booking for 10+ passengers.}}" target="_blank" rel="noopener">{{icon:users}}Group Booking</a>
     </div>
     <div class="search-body">
-      <p class="search-note">{{icon:info}}<span>One-way flights on <b>Tamil Nadu ⇄ Singapore</b> sectors. Pick “all airports” to compare Trichy, Chennai &amp; Coimbatore together.</span></p>
-      <form class="search-form" data-search>
-        <div class="field field-sector">
-          <label for="sRoute">Sector</label>
-          <select id="sRoute" name="route"></select>
-          <small data-route-hint>&nbsp;</small>
-        </div>
-        <div class="field">
-          <label for="sDate">Departure</label>
-          <input id="sDate" name="date" type="date" required>
-          <small>One way</small>
-        </div>
-        <div class="field">
-          <span class="lbl" id="paxLbl">Travellers</span>
-          <button type="button" class="pax-btn" aria-haspopup="dialog" aria-expanded="false" aria-describedby="paxLbl">1 Traveller</button>
-          <small data-pax-detail>1 Adult · Economy</small>
-          <div class="pax-pop" role="dialog" aria-label="Choose travellers">
-            <div class="pax-row" data-pax="ad"><span><b>Adults</b><small>12+ years</small></span><span class="stepper"><button type="button" aria-label="Fewer adults">−</button><output>1</output><button type="button" aria-label="More adults">+</button></span></div>
-            <div class="pax-row" data-pax="ch"><span><b>Children</b><small>2–11 years</small></span><span class="stepper"><button type="button" aria-label="Fewer children">−</button><output>0</output><button type="button" aria-label="More children">+</button></span></div>
-            <div class="pax-row" data-pax="inf"><span><b>Infants</b><small>Under 2 years</small></span><span class="stepper"><button type="button" aria-label="Fewer infants">−</button><output>0</output><button type="button" aria-label="More infants">+</button></span></div>
-            <button type="button" class="btn btn-dark btn-block btn-sm" data-pax-done>Done</button>
-          </div>
-        </div>
-        <button class="btn btn-yellow btn-lg" type="submit">{{icon:search}}Search</button>
-      </form>
+      <p class="search-note">{{icon:info}}<span>One way or round trip on <b>Tamil Nadu ⇄ Singapore</b>. Fares shown <b>include checked baggage</b>; pick “All Tamil Nadu” to compare Trichy, Chennai &amp; Coimbatore together.</span></p>
+      {{search}}
       <div class="quick-routes" id="quickRoutes" aria-label="Lowest fares in the next 7 days"></div>
     </div>
   </div>
@@ -57,7 +34,7 @@
 
 <section class="section-tight">
   <div class="wrap trust">
-    <div><span class="ic">{{icon:tag}}</span><span><b>Saved agent fares</b><small>Updated from live airline data</small></span></div>
+    <div><span class="ic">{{icon:tag}}</span><span><b>Special &amp; offer fares</b><small>Fare comparison updated daily</small></span></div>
     <div><span class="ic">{{icon:card}}</span><span><b>No online payment</b><small>Pay after we reconfirm your fare</small></span></div>
     <div><span class="ic">{{icon:headset}}</span><span><b>Real people</b><small>Trichy &amp; Singapore desks</small></span></div>
     <div><span class="ic">{{icon:users}}</span><span><b>Group fares</b><small>Temple groups, weddings, 10+ pax</small></span></div>
@@ -86,6 +63,12 @@
 
 <section class="section" id="blogs">
   <div class="wrap">
+    <a class="diwali-banner" href="/diwali-fares">
+      <span class="dw-lamp" aria-hidden="true">🪔</span>
+      <span class="dw-text"><span class="eyebrow">Diwali 2026</span><b>Diwali Fares: Singapore ⇄ Trichy, Chennai &amp; Coimbatore</b>
+        <small>Fly Sat 7 Nov, return Tue 10 – Fri 13 Nov · every combination ranked lowest to highest, baggage included</small></span>
+      <span class="dw-price"><b data-live="diwali">&nbsp;</b><span class="btn btn-yellow">See Diwali fares {{icon:arrowR}}</span></span>
+    </a>
     <div class="sec-head">
       <div><span class="eyebrow">Featured</span><h2 class="bar-title">Deals &amp; Travel Guides</h2><p>Updated from our saved fare data every time you visit.</p></div>
     </div>

@@ -10,7 +10,19 @@
 <section class="section">
   <div class="wrap">
     <div class="week-table-wrap" id="weekTable"><p class="loading">Loading this week’s fares…</p></div>
-    <p class="disclaimer">Prices are per adult in SGD, including taxes and our service fee. Saved fare data last updated <b id="faresUpdated">—</b>. Our team reconfirms the live fare before ticketing.</p>
+    <p class="disclaimer">Prices are per adult in SGD, including taxes, checked baggage and our service fee. Saved fare data last updated <b id="faresUpdated">—</b>. Our team reconfirms the live fare before ticketing.</p>
+
+    <div class="sec-head" style="margin-top:44px">
+      <div><span class="eyebrow">Fare comparison</span><h2 class="bar-title">Top fare changes in one day</h2>
+        <p>Biggest price drops and increases since the previous fare update (<b data-prev-updated>—</b> → <b data-fares-updated>—</b>). Updated automatically every day.</p></div>
+    </div>
+    <div class="filters" id="changeTabs" role="group" aria-label="Airport">
+      <button class="filter" type="button" data-chg="TRZ" aria-pressed="true">Trichy</button>
+      <button class="filter" type="button" data-chg="MAA" aria-pressed="false">Chennai</button>
+      <button class="filter" type="button" data-chg="CJB" aria-pressed="false">Coimbatore</button>
+      <button class="filter" type="button" data-chg="all" aria-pressed="false">All airports</button>
+    </div>
+    <div id="fareChanges" aria-live="polite"><p class="loading">Comparing with the previous update…</p></div>
 
     <div class="grid-3" style="margin-top:32px">
       <div class="card tip"><div class="ic">{{icon:calendar}}</div><h3>Flexible by a day?</h3><p>Moving your trip by one day often saves more than any promo code. Use the date strip on the search page to compare.</p></div>

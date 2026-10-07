@@ -35,13 +35,18 @@ git push
 `D:\AI_ORGANIZED\01_MAIN\01_SIRPY_AIR_TRAVELS\2026-09_Flight_Fare_Scrapers\flights\fare_matrix`
 (or a folder you pass: `npm run fares -- "D:\other\folder"`). Only SIN ⇄ TRZ / MAA / CJB are kept. When several files cover the same route and day, the newest file wins. Past dates are dropped.
 
-The weekly fares, top 10, offer prices and home-page chips all recalculate from this file in the browser, so they update with it.
+The weekly fares, top 10, Diwali fares, offer prices and home-page chips all recalculate from this file in the browser, so they update with it.
+
+On the first update of each new day the previous `fares.json` is kept as `assets/data/fares-prev.json`; the "Top fare changes in one day" block on `/weekly-fares` compares the two.
 
 ## Pricing settings
 
 At the top of `assets/js/site.js`:
 
-- `MARKUP_INR: 1000` — added to every adult/child seat.
+- `MARKUP_INR: 1000` — added to every adult/child seat, each flight.
+- `BAGGAGE` — checked baggage added to the shown fare, in INR per passenger per flight (Scoot 20 kg ₹3,600 from Singapore / ₹3,100 to Singapore; Air India Express 30 kg ₹1,000 each way; IndiGo and Singapore Airlines included). Every price shows the total with baggage and a "without baggage" popup.
+- `DIWALI` — dates used by `/diwali-fares` (depart 7 Nov, return 10–13 Nov).
+- `DEFAULT_ROUTE` — the search box default (Singapore → Trichy).
 - SGD→INR uses today's live rate from open.er-api.com (cached 6 hours per visitor); `FALLBACK_RATE` is used only if that fails.
 - `AIRLINES` — names and the Manage Booking / PNR link for each airline code. Logos load from Google (`gstatic.com/flights/airline_logos/70px/dark/<CODE>.png`), falling back to `dhiz4uvf5rpaq.cloudfront.net/images/airline-logos/<CODE>.jpg`.
 - `ROUTES` — the sectors in the search box.
