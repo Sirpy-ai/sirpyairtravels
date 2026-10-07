@@ -1,7 +1,12 @@
 <!-- {"title": "Search Flights — Tamil Nadu ⇄ Singapore", "description": "Compare special fares on Trichy, Chennai and Coimbatore to Singapore flights — Scoot, IndiGo, Air India Express and Singapore Airlines — and send a booking request.", "nav": "flights", "scripts": ["booking"], "nofooterCta": true} -->
 <div class="modify-bar">
   <div class="wrap">
-    {{search:Modify Search}}
+    <button type="button" class="modify-summary" aria-expanded="false" aria-controls="modifyForm">
+      <span class="ms-route" id="msRoute">Loading…</span>
+      <span class="ms-meta" id="msMeta"></span>
+      <span class="ms-edit">Edit</span>
+    </button>
+    <div id="modifyForm">{{search:Modify Search}}</div>
   </div>
 </div>
 

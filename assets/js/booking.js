@@ -8,7 +8,7 @@
   const S = window.SirpySite;
   if (!S) return;
   const { SIRPY, $, $$, esc, wa, addDays, daysBetween, today, fmtDate, fmt12, fmtDur, logoImg, airlineName,
-          money, loadFares, inRoute, reverseKey, cheapest, roundTrips, priceHtml, sumPrices, bagLabel, parseYmd } = S;
+          money, loadFares, inRoute, reverseKey, cheapest, roundTrips, priceHtml, sumPrices, bagLabel, parseYmd, shareBtn } = S;
 
   const params = new URLSearchParams(location.search);
   const paxFromParams = () => {
@@ -56,6 +56,21 @@
     const tripLen = rt ? daysBetween(date, ret) : 0;
     let sort = 'price';
     const filters = { airlines: new Set(), origins: new Set(), slots: new Set() };
+
+    /* Phones: the search form collapses into a one-line summary with Edit. */
+    const msBtn = $('.modify-summary');
+    const msMeta = () => {
+      const n = pax.ad + pax.ch + pax.inf;
+      $('#msRoute').textContent = `${route.short}${rt ? ' · Return' : ''}`;
+      $('#msMeta').textContent = `${fmtDate(date, { day: 'numeric', month: 'short' })}${rt ? ` – ${fmtDate(ret, { day: 'numeric', month: 'short' })}` : ''} · ${n} traveller${n > 1 ? 's' : ''}`;
+    };
+    if (msBtn) {
+      msMeta();
+      msBtn.addEventListener('click', () => {
+        const open = $('.modify-bar').classList.toggle('open');
+        msBtn.setAttribute('aria-expanded', String(open));
+      });
+    }
 
     let data;
     try {
@@ -157,6 +172,7 @@
       history.replaceState(null, '', `${location.pathname}?${params}`);
       const di = $('#sDate'); if (di) di.value = d;
       const ri = $('#sRet'); if (ri && rt) ri.value = ret;
+      if (msBtn) msMeta();
       render();
     }
 
@@ -208,8 +224,8 @@
         const tags = [];
         if (f === byPrice[0]) tags.push('<span class="best">Cheapest</span>');
         if (f === byDur[0] && day.length > 1) tags.push('<span>Fastest</span>');
-        tags.push(`<span>${esc(bagLabel(f.p.bag))}</span>`, '<span>Fare reconfirmed before ticketing</span>');
-        return `<article class="card flight">
+        return `<article class="card flight has-share">
+          ${shareBtn({ legs: [f], p: f.p, per: 'per adult' })}
           ${legHtml(f)}
           <div class="fl-price">${priceHtml(f.p)}<a class="btn btn-yellow" href="/book?f=${encodeURIComponent(f.id)}${paxQuery(pax)}">Book Now</a></div>
           <div class="fl-tags">${tags.join('')}</div>
@@ -248,10 +264,11 @@
         const q = new URLSearchParams({ f: c.out.id, r: c.ret.id });
         const tags = [c.same ? `<span class="best">Same airline · ${esc(airlineName(c.out.airline))}</span>` : '<span>Mixed airlines</span>'];
         if (c === byPrice[0]) tags.unshift('<span class="best">Cheapest</span>');
-        return `<article class="card flight rt">
+        return `<article class="card flight rt has-share">
+          ${shareBtn({ legs: [c.out, c.ret], p: c.p, per: 'return, per adult' })}
           <div class="rt-legs">${legHtml(c.out, 'Depart')}${legHtml(c.ret, 'Return')}</div>
           <div class="fl-price">${priceHtml(c.p, { per: 'return, per adult' })}<a class="btn btn-yellow" href="/book?${q}${paxQuery(pax)}">Book Now</a></div>
-          <div class="fl-tags">${tags.join('')}<span>Fare reconfirmed before ticketing</span></div>
+          <div class="fl-tags">${tags.join('')}</div>
         </article>`;
       };
       const group = (title, sub, items) => {

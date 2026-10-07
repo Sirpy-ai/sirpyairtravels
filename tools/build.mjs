@@ -259,17 +259,17 @@ const searchForm = (button = 'Search') => `<form class="search-form" data-search
       <select id="sTo" name="to"></select>
       <small data-route-hint>&nbsp;</small>
     </div>
-    <div class="field">
+    <div class="field field-date">
       <label for="sDate">Departure</label>
       <input id="sDate" name="date" type="date" required>
       <small>Depart date</small>
     </div>
-    <div class="field field-ret">
+    <div class="field field-ret" hidden>
       <label for="sRet">Return</label>
       <input id="sRet" name="ret" type="date">
-      <small>Tap to add return</small>
+      <small>Return date</small>
     </div>
-    <div class="field">
+    <div class="field field-pax">
       <span class="lbl" id="paxLbl">Travellers</span>
       <button type="button" class="pax-btn" aria-haspopup="dialog" aria-expanded="false" aria-describedby="paxLbl">1 Traveller</button>
       <small data-pax-detail>1 Adult · Economy</small>

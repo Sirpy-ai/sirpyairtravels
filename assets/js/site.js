@@ -317,15 +317,15 @@
     dateIn.value = params.get('date') && params.get('date') >= today() ? params.get('date') : addDays(today(), 1);
     retIn.min = dateIn.value;
     retIn.value = params.get('ret') && params.get('ret') >= dateIn.value ? params.get('ret') : addDays(dateIn.value, 3);
+    /* One way hides the return box completely; Round trip shows it. */
     function setTrip(t) {
       trip = t;
       tripInputs.forEach((i) => { i.checked = i.value === t; });
-      retField.classList.toggle('off', t !== 'rt');
+      retField.hidden = t !== 'rt';
       retIn.required = t === 'rt';
-      retIn.tabIndex = t === 'rt' ? 0 : -1;
+      form.classList.toggle('is-rt', t === 'rt');
     }
     tripInputs.forEach((i) => i.addEventListener('change', () => setTrip(i.value)));
-    retField.addEventListener('click', () => { if (trip !== 'rt') { setTrip('rt'); retIn.focus(); } });
     dateIn.addEventListener('change', () => {
       retIn.min = dateIn.value;
       if (retIn.value < dateIn.value) retIn.value = addDays(dateIn.value, 3);
@@ -604,7 +604,8 @@
         const top = [...best.values()].sort((a, b) => a.p.sgd - b.p.sgd || a.date.localeCompare(b.date)).slice(0, 10);
         box.innerHTML = top.map((f, i) => {
           const q = new URLSearchParams({ route: `${f.from}-${f.to}`, date: f.date });
-          return `<div class="card top-item">
+          return `<div class="card top-item has-share">
+            ${shareBtn({ legs: [f], p: f.p, per: 'per adult', badge: 'TOP 10 LOW FARE' })}
             <span class="rank">${i + 1}</span>
             ${logoImg(f.airline, 44)}
             <a class="top-main" href="/flights?${q}"><b>${esc(SIRPY.AIRPORTS[f.from].city)} → ${esc(SIRPY.AIRPORTS[f.to].city)}</b>
@@ -629,7 +630,8 @@
         <small>${esc(airlineName(f.airline))} · ${f.from} → ${f.to} · ${fmtDate(f.date, { weekday: 'short', day: 'numeric', month: 'short' })} · ${fmtDur(f.dur)}</small></span>
     </div>`;
     const q = new URLSearchParams({ f: c.out.id, r: c.ret.id, ad: 1, ch: 0, inf: 0 });
-    return `<article class="card combo">
+    return `<article class="card combo has-share">
+      ${shareBtn({ legs: [c.out, c.ret], p: c.p, per: 'return, per adult', badge: 'DIWALI FARE' })}
       <div class="combo-legs">
         ${label ? `<span class="combo-tag">${label}</span>` : ''}
         <span class="combo-tag ${c.same ? 'same' : 'mixed'}">${c.same ? `Same airline · ${esc(airlineName(c.out.airline))}` : 'Mixed airlines'}</span>
@@ -698,10 +700,190 @@
   }
   initDiwali();
 
+  /* ---------- Share a fare as an image (for WhatsApp) ----------
+     Every fare card gets a corner button. It draws a branded image of the fare
+     with the website link, then: phones open the share sheet (WhatsApp etc.)
+     with the image + link; computers copy the image to paste into WhatsApp. */
+  const SHARE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>';
+  const WA_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.5 3.5A11.8 11.8 0 0 0 1.9 17.7L.3 23.6l6-1.6A11.8 11.8 0 0 0 23.8 12a11.7 11.7 0 0 0-3.3-8.5zM12.1 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.6.9 1-3.5-.2-.4a9.8 9.8 0 1 1 8.2 4.6zm5.4-7.3c-.3-.2-1.8-.9-2-1s-.5-.2-.7.1-.8 1-1 1.2-.4.2-.7.1a8 8 0 0 1-4-3.5c-.3-.5.3-.5.9-1.6.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.5 13.5 0 0 0 5.2 4.6c1.9.8 2.7.9 3.6.7a3.1 3.1 0 0 0 2-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.1-.3-.2-.5-.3z"/></svg>';
+  const shareReg = new Map();
+  let shareSeq = 0;
+  function shareBtn(data) {
+    const id = `sh${++shareSeq}`;
+    shareReg.set(id, data);
+    return `<button type="button" class="share-btn" data-share="${id}" aria-label="Share this fare as an image" title="Share as image">${SHARE_SVG}</button>`;
+  }
+  const fareUrl = (legs) => {
+    const [a, b] = legs;
+    const q = new URLSearchParams({ route: `${a.from}-${a.to}`, date: a.date });
+    if (b) { q.set('trip', 'rt'); q.set('ret', b.date); }
+    /* Shared links always point at the live site, even from a local preview. */
+    const origin = /sirpyairtravels\.com$/.test(location.hostname) ? location.origin : 'https://sirpyairtravels.com';
+    return `${origin}/flights?${q}`;
+  };
+  const loadImg = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  function roundRect(x, X, Y, w, h, r) {
+    if (!x.roundRect) { x.fillRect(X, Y, w, h); return; }
+    x.beginPath(); x.roundRect(X, Y, w, h, r); x.fill();
+  }
+
+  async function drawFareImage(d) {
+    const W = 1080, H = 1080;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    try { await Promise.all(['400', '600', '700', '800'].map((w) => document.fonts.load(`${w} 40px Poppins`))); } catch { /* system font */ }
+    const font = (w, s) => `${w} ${s}px Poppins, "Segoe UI", Arial, sans-serif`;
+    const legs = d.legs;
+    const rt = legs.length > 1;
+    const city = (code) => SIRPY.AIRPORTS[code].city;
+
+    x.fillStyle = '#f5f5f2'; x.fillRect(0, 0, W, H);
+    /* header */
+    x.fillStyle = '#111111'; x.fillRect(0, 0, W, 170);
+    x.fillStyle = '#ffffff'; roundRect(x, 40, 30, 330, 110, 16);
+    try { const logo = await loadImg('/assets/img/logo.png'); x.drawImage(logo, 55, 40, 300, 98); } catch { /* text only */ }
+    x.textAlign = 'right';
+    x.fillStyle = '#ffc61a'; x.font = font(800, 40); x.fillText(d.badge || 'SPECIAL FARE', W - 50, 88);
+    x.fillStyle = '#d9d9d9'; x.font = font(500, 26); x.fillText('Tamil Nadu ⇄ Singapore flights', W - 50, 128);
+    x.textAlign = 'left';
+
+    /* route */
+    x.fillStyle = '#111111'; x.font = font(800, 60);
+    x.fillText(`${city(legs[0].from)} ${rt ? '⇄' : '→'} ${city(legs[0].to)}`, 60, 255);
+    x.fillStyle = '#ffc61a'; roundRect(x, 60, 278, rt ? 190 : 160, 46, 23);
+    x.fillStyle = '#111111'; x.font = font(700, 24); x.fillText(rt ? 'Round trip' : 'One way', 80, 309);
+
+    /* flights */
+    let y = 350;
+    legs.forEach((f, i) => {
+      x.fillStyle = '#ffffff'; roundRect(x, 60, y, 960, 150, 18);
+      x.fillStyle = '#e8ad00'; x.font = font(700, 22);
+      x.fillText(rt ? (i ? 'RETURN' : 'DEPART') : 'FLIGHT', 90, y + 40);
+      x.fillStyle = '#333333'; x.font = font(600, 28);
+      x.fillText(`${airlineName(f.airline)} · ${fmtDate(f.date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · Non-stop`, 90, y + 82);
+      x.fillStyle = '#111111'; x.font = font(800, 38);
+      x.fillText(`${fmt12(f.dep)} ${f.from}  →  ${fmt12(f.arr)} ${f.to}${f.plus ? ` (+${f.plus})` : ''}`, 90, y + 130);
+      y += 166;
+    });
+
+    /* price */
+    const p = d.p;
+    x.fillStyle = '#ffc61a'; roundRect(x, 60, y + 4, 960, 200, 22);
+    x.fillStyle = '#111111'; x.font = font(800, 104);
+    x.fillText(money.sgd(p.sgd), 95, y + 128);
+    x.font = font(600, 26);
+    x.fillText(`${d.per || 'per adult'} · ${[...new Set(p.legs.map((l) => bagLabel(l.bag)))].join(' · ')}`, 97, y + 176);
+    x.textAlign = 'right'; x.font = font(700, 40);
+    x.fillText(money.inr(p.inr), 985, y + 92);
+    if (p.noBagSgd !== p.sgd) { x.font = font(500, 24); x.fillText(`${money.sgd(p.noBagSgd)} without baggage`, 985, y + 132); }
+    x.textAlign = 'left';
+
+    /* footer */
+    x.fillStyle = '#111111'; x.fillRect(0, H - 150, W, 150);
+    x.fillStyle = '#ffc61a'; x.font = font(700, 36);
+    x.fillText('Book: sirpyairtravels.com', 60, H - 88);
+    x.fillStyle = '#ffffff'; x.font = font(500, 28);
+    x.fillText('WhatsApp +91 93440 20864  ·  SG +65 8260 2446', 60, H - 42);
+    x.textAlign = 'right'; x.fillStyle = '#9a9a9a'; x.font = font(400, 20);
+    x.fillText(`Fare as of ${d.updated ? fmtDate(d.updated, { day: 'numeric', month: 'short' }) : 'today'} · subject to availability`, W - 40, H - 92);
+    x.textAlign = 'left';
+    return new Promise((res) => c.toBlob(res, 'image/png'));
+  }
+
+  let shareModal;
+  function openShare(d) {
+    if (!shareModal) {
+      shareModal = document.createElement('div');
+      shareModal.className = 'share-modal';
+      shareModal.innerHTML = `<div class="share-box" role="dialog" aria-modal="true" aria-label="Share this fare">
+        <button type="button" class="share-close" aria-label="Close">&times;</button>
+        <h3>Share this fare</h3>
+        <div class="share-img"><p class="loading">Creating image…</p></div>
+        <div class="share-acts">
+          <button type="button" class="btn btn-wa" data-act="share">${WA_SVG}Share on WhatsApp</button>
+          <button type="button" class="btn btn-dark" data-act="copy">Copy image</button>
+          <button type="button" class="btn btn-ghost" data-act="download">Download</button>
+        </div>
+        <p class="share-note" aria-live="polite"></p>
+        <div class="share-link"><input type="text" readonly aria-label="Fare link"><button type="button" class="btn btn-sm btn-ghost" data-act="link">Copy link</button></div>
+      </div>`;
+      document.body.appendChild(shareModal);
+      shareModal.addEventListener('click', (e) => { if (e.target === shareModal || e.target.closest('.share-close')) closeShare(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeShare(); });
+    }
+    const note = $('.share-note', shareModal);
+    const imgBox = $('.share-img', shareModal);
+    const link = fareUrl(d.legs);
+    const legsTxt = d.legs.map((f) => `${f.from}→${f.to} ${fmtDate(f.date, { day: 'numeric', month: 'short' })} ${airlineName(f.airline)} ${fmt12(f.dep)}`).join(' / ');
+    const text = `✈️ ${SIRPY.AIRPORTS[d.legs[0].from].city} ${d.legs.length > 1 ? '⇄' : '→'} ${SIRPY.AIRPORTS[d.legs[0].to].city} special fare ${money.sgd(d.p.sgd)} (${money.inr(d.p.inr)}) ${d.per || 'per adult'}, baggage included\n${legsTxt}\nBook: ${link}\nSirpy Air Travels · WhatsApp +91 93440 20864`;
+    $('.share-link input', shareModal).value = link;
+    note.textContent = '';
+    imgBox.innerHTML = '<p class="loading">Creating image…</p>';
+    shareModal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    $('.share-close', shareModal).focus();
+
+    let blob = null;
+    const ready = drawFareImage(d).then((b) => {
+      blob = b;
+      imgBox.innerHTML = `<img src="${URL.createObjectURL(b)}" alt="Fare image preview">`;
+      return b;
+    });
+    const file = () => new File([blob], `sirpy-fare-${d.legs[0].from}-${d.legs[0].to}-${d.legs[0].date}.png`, { type: 'image/png' });
+
+    $('.share-acts', shareModal).onclick = async (e) => {
+      const act = e.target.closest('[data-act]');
+      if (!act) return;
+      await ready;
+      if (act.dataset.act === 'share') {
+        if (navigator.canShare && navigator.canShare({ files: [file()] })) {
+          try { await navigator.share({ files: [file()], text }); note.textContent = 'Shared.'; return; }
+          catch (err) { if (err && err.name === 'AbortError') return; }
+        }
+        /* Computer: copy the image, then open WhatsApp with the link text. */
+        const copied = await copyImage(blob, text);
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+        note.textContent = copied ? 'Image copied — paste it (Ctrl+V) into the WhatsApp chat. The link is already in the message.' : 'WhatsApp opened with the fare link. Use Download to attach the image.';
+      } else if (act.dataset.act === 'copy') {
+        note.textContent = (await copyImage(blob, text)) ? 'Image copied — paste it into WhatsApp.' : 'Your browser cannot copy images. Use Download instead.';
+      } else if (act.dataset.act === 'download') {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = file().name; a.click();
+        note.textContent = 'Image downloaded.';
+      }
+    };
+    $('[data-act="link"]', shareModal).onclick = async () => {
+      try { await navigator.clipboard.writeText(text); note.textContent = 'Fare text and link copied.'; }
+      catch { $('.share-link input', shareModal).select(); note.textContent = 'Press Ctrl+C to copy the link.'; }
+    };
+  }
+  async function copyImage(blob, text) {
+    if (!navigator.clipboard || !window.ClipboardItem) return false;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob, 'text/plain': new Blob([text], { type: 'text/plain' }) })]);
+      return true;
+    } catch {
+      try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); return true; } catch { return false; }
+    }
+  }
+  function closeShare() {
+    if (!shareModal || !shareModal.classList.contains('open')) return;
+    shareModal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.share-btn');
+    if (!b) return;
+    e.preventDefault();
+    const d = shareReg.get(b.dataset.share);
+    if (d) loadFares().then(({ updated }) => openShare({ ...d, updated })).catch(() => openShare(d));
+  });
+
   /* Shared with booking.js */
   window.SirpySite = {
     SIRPY, $, $$, esc, store, wa, ymd, parseYmd, addDays, daysBetween, today, fmtDate, fmt12, fmtDur, nf,
     logoImg, logoUrl, airlineName, getRate, money, loadFares, inRoute, reverseKey, cheapest,
-    roundTrips, priceHtml, sumPrices, baggageFor, bagLabel, comboHtml
+    roundTrips, priceHtml, sumPrices, baggageFor, bagLabel, comboHtml, shareBtn
   };
 })();
