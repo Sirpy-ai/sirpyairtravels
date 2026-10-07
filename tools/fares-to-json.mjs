@@ -110,7 +110,7 @@ for (const { n, mtime } of files) {
 }
 
 /* Departed flights are dead weight; the browser hides them anyway. */
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString('en-CA');
 const rows = [...flights.values()].filter((r) => r[0] >= today).sort((a, b) =>
   a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]) || a[2].localeCompare(b[2]) || a[4].localeCompare(b[4]));
 
@@ -118,7 +118,7 @@ const usedCodes = new Set(rows.map((r) => r[3]));
 const airlines = Object.fromEntries(Object.entries(AIRLINE_CODES).filter(([, c]) => usedCodes.has(c)).map(([n, c]) => [c, n]));
 
 const data = {
-  updated: new Date(newest).toISOString().slice(0, 10),
+  updated: new Date(newest).toLocaleDateString('en-CA'), // local date (TZ=Asia/Singapore in CI)
   source: 'Google Flights scrape',
   currency: 'SGD',
   fields: ['date', 'from', 'to', 'airline', 'dep', 'arr', 'arrDayOffset', 'durationMin', 'priceSGD'],

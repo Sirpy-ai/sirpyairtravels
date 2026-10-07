@@ -4,18 +4,25 @@
 # assets/data/fares.json and commits it. Vercel deploys the commit, so the live
 # site shows fresh fares without anyone running anything.
 #
-# Runs at 06:00 Singapore time (22:00 UTC the day before). Can also be started
-# by hand: GitHub -> Actions -> "Update fares" -> Run workflow.
+# Three attempts a day (Singapore time 05:17, 11:17, 17:17). The first one that
+# succeeds publishes; later attempts that day see fares are already fresh and
+# stop in seconds. Each attempt gets a new GitHub runner, so if Google blocks
+# one runner's IP, the next attempt usually gets through. Odd minutes avoid the
+# top-of-the-hour slots where GitHub delays or drops scheduled runs.
 #
-# Safety: if the scrape comes back with far fewer flights than the site already
-# has (e.g. Google blocked the runner), the job fails and nothing is committed,
-# so the site keeps the previous day's fares.
+# Safety: if Google keeps blocking, the scraper gives up after a few blocks and
+# writes nothing; if the result has far fewer flights than the site already
+# has, nothing is committed. Either way the site keeps the previous fares.
+#
+# Start one by hand: GitHub -> Actions -> "Update fares" -> Run workflow.
 
 name: Update fares
 
 on:
   schedule:
-    - cron: "0 22 * * *"
+    - cron: "17 21 * * *"   # 05:17 SGT
+    - cron: "17 3 * * *"    # 11:17 SGT
+    - cron: "17 9 * * *"    # 17:17 SGT
   # Also run once whenever the scraper or this workflow changes, as a live test.
   push:
     branches: [main]
@@ -29,6 +36,10 @@ on:
         description: "How many days ahead to scrape"
         required: false
         default: "118"
+      force:
+        description: "Scrape even if fares were already updated today"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -43,46 +54,66 @@ env:
 
 jobs:
   scrape:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
 
+      - name: Already updated today?
+        id: fresh
+        run: |
+          TODAY=$(date +%F)
+          UPDATED=$(node -p "require('./assets/data/fares.json').updated")
+          echo "Fares last updated: $UPDATED (today: $TODAY)"
+          if [ "$UPDATED" = "$TODAY" ] && [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Fares are already fresh today — nothing to do."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-python@v5
+        if: steps.fresh.outputs.skip != 'true'
         with:
           python-version: "3.12"
 
       - uses: actions/setup-node@v4
+        if: steps.fresh.outputs.skip != 'true'
         with:
           node-version: "22"
 
       - name: Install scraper dependencies
+        if: steps.fresh.outputs.skip != 'true'
         run: |
           pip install --quiet playwright pandas
           python -m playwright install --with-deps chromium
 
       - name: Scrape Google Flights
+        if: steps.fresh.outputs.skip != 'true'
         working-directory: scraper
+        timeout-minutes: 40
         run: |
           START=$(date +%F)
           END=$(date -d "$START + $((DAYS - 1)) days" +%F)
           echo "Scraping $START .. $END"
+          set -o pipefail
           python -u flight_scraper_v2.py --start "$START" --end "$END" \
-            --workers 4 --fresh --force \
+            --workers 4 --fresh --force --max-blocks 6 \
             --hub SIN --airports TRZ,MAA,CJB --suffix daily \
             --cache cache_daily.jsonl | tee scrape.log
-          grep -E "done in|rows .* dates" scrape.log || true
 
       - name: Build fares.json
+        if: steps.fresh.outputs.skip != 'true'
         run: |
           git show HEAD:assets/data/fares.json > /tmp/old-fares.json
           node tools/fares-to-json.mjs scraper
 
       - name: Sanity check
+        if: steps.fresh.outputs.skip != 'true'
         run: |
           node -e '
             const fs = require("fs");
-            const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
+            const today = new Date().toLocaleDateString("en-CA");
             const count = (f) => JSON.parse(fs.readFileSync(f, "utf8")).flights.filter((r) => r[0] >= today);
             const oldF = count("/tmp/old-fares.json"), newF = count("assets/data/fares.json");
             const routes = {};
@@ -94,6 +125,7 @@ jobs:
           '
 
       - name: Commit and push
+        if: steps.fresh.outputs.skip != 'true'
         run: |
           if git diff --quiet -- assets/data/fares.json; then
             echo "Fares unchanged."
@@ -103,12 +135,14 @@ jobs:
           git config user.email "sirpy08@gmail.com"
           git add assets/data/fares.json
           git commit -m "Update fares $(date +%F)"
+          git pull --rebase --quiet
           git push
 
       - name: Keep scrape log
-        if: always()
+        if: always() && steps.fresh.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: scrape-log
           path: scraper/scrape.log
+          if-no-files-found: ignore
           retention-days: 14

@@ -195,7 +195,9 @@ async def is_blocked(page):
 # ------------------------------------------------------------------- engine --
 
 class Scraper:
-    def __init__(self, workers, pages_per_context, cache):
+    def __init__(self, workers, pages_per_context, cache, max_blocks=None):
+        self.max_blocks = max_blocks
+        self.aborted = False
         self.workers = workers
         self.pages_per_context = pages_per_context
         self.cache = cache
@@ -259,7 +261,7 @@ class Scraper:
 
     async def worker(self, browser, wid, queue, total):
         context, served = None, 0
-        while True:
+        while not self.aborted:
             try:
                 task = queue.get_nowait()
             except asyncio.QueueEmpty:
@@ -293,6 +295,10 @@ class Scraper:
                     break
                 if status == "blocked":
                     self.blocked_hits += 1
+                    if self.max_blocks is not None and self.blocked_hits > self.max_blocks:
+                        self.aborted = True
+                        print(f"  [w{wid}] BLOCKED {self.blocked_hits} times -> giving up")
+                        break
                     wait = min(300, 45 * (2 ** attempt))
                     print(f"  [w{wid}] BLOCKED on {key} -> cooling {wait}s")
                     await self.cool_down(wait)
@@ -306,6 +312,16 @@ class Scraper:
                 if status == "empty" and attempt >= 1:
                     break                     # genuinely no non-stop service
                 await asyncio.sleep(random.uniform(3, 7))
+
+            if self.aborted:
+                queue.task_done()
+                break
+            if status == "blocked":
+                # A block is not "no flights that day": leave it uncached so the
+                # date is retried next run instead of being saved as empty.
+                print(f"  [w{wid}] {key:16s} still blocked, not recorded")
+                queue.task_done()
+                continue
 
             await self.record(key, flights)
             done = len(self.cache)
@@ -397,12 +413,17 @@ async def amain(args):
         write_master_csvs(cached_rows, args.force)
         return
 
-    scraper = Scraper(args.workers, args.pages_per_context, cache)
+    scraper = Scraper(args.workers, args.pages_per_context, cache, args.max_blocks)
     t0 = time.monotonic()
     await scraper.run(pending)
     rows = cached_rows + scraper.results
     print(f"\ndone in {(time.monotonic() - t0) / 60:.1f} min, "
           f"{len(rows)} flight rows, {scraper.blocked_hits} block events")
+    if scraper.aborted:
+        # Partial data would replace good fares with gaps; write nothing.
+        print(f"ABORTED: Google blocked this machine more than {args.max_blocks} times. "
+              "No CSVs written.")
+        sys.exit(3)
     write_master_csvs(rows, args.force)
     print("\nnext: python build_workbook.py --from-master")
 
@@ -426,6 +447,9 @@ def main():
     ap.add_argument("--suffix", default=SUFFIX,
                     help="filename tag for output CSVs, e.g. aug_oct2026")
     ap.add_argument("--cache", default=CACHE_PATH, help="resume checkpoint path")
+    ap.add_argument("--max-blocks", type=int, default=None,
+                    help="give up (exit 3, no CSVs written) after this many block events; "
+                         "default waits out blocks indefinitely")
     args = ap.parse_args()
 
     HUB = args.hub.strip().upper()
