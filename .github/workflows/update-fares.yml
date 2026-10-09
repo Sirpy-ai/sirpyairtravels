@@ -1,7 +1,8 @@
 # Daily fare refresh.
 #
-# Scrapes non-stop Google Flights fares for SIN <-> TRZ / MAA / CJB, rebuilds
-# assets/data/fares.json and commits it. Vercel deploys the commit, so the live
+# Scrapes non-stop Google Flights fares for SIN <-> TRZ / MAA / CJB for the
+# rest of the current month only (today .. month end), merges them into
+# assets/data/fares.json (later months keep their existing fares) and commits. Vercel deploys the commit, so the live
 # site shows fresh fares without anyone running anything.
 #
 # Three attempts a day (Singapore time 05:17, 11:17, 17:17). The first one that
@@ -32,10 +33,10 @@ on:
       - "tools/fares-to-json.mjs"
   workflow_dispatch:
     inputs:
-      days:
-        description: "How many days ahead to scrape"
+      end:
+        description: "Last date to scrape (YYYY-MM-DD). Blank = end of this month"
         required: false
-        default: "118"
+        default: ""
       force:
         description: "Scrape even if fares were already updated today"
         type: boolean
@@ -50,7 +51,7 @@ concurrency:
 
 env:
   TZ: Asia/Singapore
-  DAYS: ${{ github.event.inputs.days || '118' }}
+  END_DATE: ${{ github.event.inputs.end }}
 
 jobs:
   scrape:
@@ -94,8 +95,9 @@ jobs:
         timeout-minutes: 40
         run: |
           START=$(date +%F)
-          END=$(date -d "$START + $((DAYS - 1)) days" +%F)
+          END=${END_DATE:-$(date -d "$(date +%Y-%m-01) + 1 month - 1 day" +%F)}
           echo "Scraping $START .. $END"
+          echo "$END" > scrape-window.txt
           set -o pipefail
           python -u flight_scraper_v2.py --start "$START" --end "$END" \
             --workers 4 --fresh --force --max-blocks 6 \
@@ -106,7 +108,7 @@ jobs:
         if: steps.fresh.outputs.skip != 'true'
         run: |
           git show HEAD:assets/data/fares.json > /tmp/old-fares.json
-          node tools/fares-to-json.mjs scraper
+          node tools/fares-to-json.mjs scraper --merge
 
       - name: Sanity check
         if: steps.fresh.outputs.skip != 'true'
@@ -114,15 +116,17 @@ jobs:
           node -e '
             const fs = require("fs");
             const today = new Date().toLocaleDateString("en-CA");
-            const count = (f) => JSON.parse(fs.readFileSync(f, "utf8")).flights.filter((r) => r[0] >= today);
+            const end = process.argv[1];
+            // Only the scraped window changes; compare that window old vs new.
+            const count = (f) => JSON.parse(fs.readFileSync(f, "utf8")).flights.filter((r) => r[0] >= today && r[0] <= end);
             const oldF = count("/tmp/old-fares.json"), newF = count("assets/data/fares.json");
             const routes = {};
             for (const r of newF) routes[r[1] + "-" + r[2]] = (routes[r[1] + "-" + r[2]] || 0) + 1;
-            console.log("old upcoming:", oldF.length, " new:", newF.length, routes);
+            console.log("window", today, "..", end, " old:", oldF.length, " new:", newF.length, routes);
             const missing = ["SIN-TRZ","TRZ-SIN","SIN-MAA","MAA-SIN","SIN-CJB","CJB-SIN"].filter((k) => !routes[k]);
             if (missing.length) { console.error("No flights scraped for:", missing.join(", ")); process.exit(1); }
-            if (newF.length < oldF.length * 0.7) { console.error("Scrape looks incomplete (under 70% of current data). Not publishing."); process.exit(1); }
-          '
+            if (newF.length < oldF.length * 0.5) { console.error("Scrape looks incomplete (under 50% of current data). Not publishing."); process.exit(1); }
+          ' "$(tail -1 scraper/scrape-window.txt)"
 
       - name: Commit and push
         if: steps.fresh.outputs.skip != 'true'

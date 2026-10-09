@@ -12,6 +12,11 @@
  * When several files cover the same route and day, the most recently modified
  * file wins for that day, so dropping a fresh scrape next to the old ones is
  * enough.
+ *
+ *   node tools/fares-to-json.mjs scraper --merge
+ *
+ * --merge starts from the current fares.json, so a scrape that only covers some
+ * days (e.g. the rest of this month) replaces those days and keeps the rest.
  */
 import { readdir, readFile, writeFile, stat, mkdir } from 'node:fs/promises';
 import { join, resolve, dirname } from 'node:path';
@@ -20,7 +25,9 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SITE = resolve(HERE, '..');
 const DEFAULT_DIR = 'D:\\AI_ORGANIZED\\01_MAIN\\01_SIRPY_AIR_TRAVELS\\2026-09_Flight_Fare_Scrapers\\flights\\fare_matrix';
-const SRC = process.argv[2] || DEFAULT_DIR;
+const args = process.argv.slice(2);
+const MERGE = args.includes('--merge');
+const SRC = args.find((a) => !a.startsWith('--')) || DEFAULT_DIR;
 const OUT = join(SITE, 'assets', 'data', 'fares.json');
 const PREV = join(SITE, 'assets', 'data', 'fares-prev.json');
 
@@ -75,6 +82,14 @@ files.sort((a, b) => a.mtime - b.mtime); // oldest first, so newer files overwri
 
 const flights = new Map();
 let newest = 0;
+
+if (MERGE) {
+  try {
+    const current = JSON.parse(await readFile(OUT, 'utf8'));
+    for (const r of current.flights) flights.set(`${r[0]}|${r[1]}|${r[2]}|${r[3]}|${r[4]}`, r);
+    console.log(`Merging into ${current.flights.length} existing flights`);
+  } catch { /* no existing file: plain build */ }
+}
 const unknownAirlines = new Set();
 
 for (const { n, mtime } of files) {
