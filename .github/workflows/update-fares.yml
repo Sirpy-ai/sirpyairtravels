@@ -11,8 +11,11 @@
 # top-of-the-hour slots where GitHub delays or drops scheduled runs.
 #
 # Safety: if Google keeps blocking, the scraper gives up after a few blocks and
-# writes nothing; if the result has far fewer flights than the site already
-# has, nothing is committed. Either way the site keeps the previous fares.
+# writes nothing; tools/check-fares.mjs refuses to publish a scrape that misses
+# a route or has far fewer flights (one airline vanishing is only a warning).
+# Either way the site keeps the previous fares.
+#
+# This PC also runs the same update daily (Task Scheduler) as the main updater.
 #
 # Start one by hand: GitHub -> Actions -> "Update fares" -> Run workflow.
 
@@ -110,19 +113,7 @@ jobs:
 
       - name: Sanity check
         if: steps.fresh.outputs.skip != 'true'
-        run: |
-          node -e '
-            const fs = require("fs");
-            const today = new Date().toLocaleDateString("en-CA");
-            const count = (f) => JSON.parse(fs.readFileSync(f, "utf8")).flights.filter((r) => r[0] >= today);
-            const oldF = count("/tmp/old-fares.json"), newF = count("assets/data/fares.json");
-            const routes = {};
-            for (const r of newF) routes[r[1] + "-" + r[2]] = (routes[r[1] + "-" + r[2]] || 0) + 1;
-            console.log("old upcoming:", oldF.length, " new:", newF.length, routes);
-            const missing = ["SIN-TRZ","TRZ-SIN","SIN-MAA","MAA-SIN","SIN-CJB","CJB-SIN"].filter((k) => !routes[k]);
-            if (missing.length) { console.error("No flights scraped for:", missing.join(", ")); process.exit(1); }
-            if (newF.length < oldF.length * 0.7) { console.error("Scrape looks incomplete (under 70% of current data). Not publishing."); process.exit(1); }
-          '
+        run: node tools/check-fares.mjs /tmp/old-fares.json assets/data/fares.json
 
       - name: Commit and push
         if: steps.fresh.outputs.skip != 'true'
