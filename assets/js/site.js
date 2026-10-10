@@ -946,6 +946,140 @@
     });
   });
 
+  /* ---------- Visitor sign-in (email or WhatsApp) / guest mode ----------
+     No password: the visitor's email or WhatsApp number is saved to the
+     subscribers list (admin → Subscribers) and remembered in this browser
+     to fill the booking form. Guests just browse; asked again after 3 days. */
+  const VISITOR_KEY = 'sirpy_visitor';
+  const getVisitor = () => { try { return JSON.parse(localStorage.getItem(VISITOR_KEY)); } catch { return null; } };
+  const setVisitor = (v) => { try { v ? localStorage.setItem(VISITOR_KEY, JSON.stringify(v)) : localStorage.removeItem(VISITOR_KEY); } catch { /* private mode */ } };
+  const CODES = ['+91', '+65', '+60', '+94', '+971'];
+
+  function signinLabel() {
+    const v = getVisitor();
+    const signed = v && v.mode !== 'guest';
+    $$('[data-signin]').forEach((b) => {
+      b.textContent = signed ? `👤 ${v.name || (v.email ? v.email.split('@')[0] : v.phone)}` : '👤 Sign in';
+      b.title = signed ? `Signed in as ${v.email || v.phone} — click to sign out` : 'Sign in with email or WhatsApp';
+    });
+  }
+
+  function signinModal() {
+    let m = $('#signinModal');
+    if (m) return m;
+    m = document.createElement('div');
+    m.id = 'signinModal';
+    m.className = 'signin-modal';
+    m.hidden = true;
+    m.innerHTML = `
+      <div class="signin-backdrop" data-signin-close></div>
+      <div class="signin-card" role="dialog" aria-modal="true" aria-labelledby="signinTitle">
+        <button class="signin-x" type="button" aria-label="Close" data-signin-close>&times;</button>
+        <img src="/assets/img/logo.png" alt="" width="120" height="39">
+        <h2 id="signinTitle">Welcome to Sirpy Air Travels</h2>
+        <p>Sign in to get <b>special fare alerts</b> and book faster. No password needed.</p>
+        <div class="signin-tabs" role="tablist">
+          <button type="button" role="tab" data-mode="email" aria-selected="true">✉️ Email</button>
+          <button type="button" role="tab" data-mode="whatsapp" aria-selected="false">💬 WhatsApp</button>
+        </div>
+        <form class="signin-form" novalidate>
+          <label class="sr-only" for="siName">Your name</label>
+          <input id="siName" name="name" autocomplete="name" placeholder="Your name (optional)" maxlength="120">
+          <div data-for="email"><label class="sr-only" for="siEmail">Email</label>
+            <input id="siEmail" name="email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+          <div data-for="whatsapp" class="signin-phone" hidden>
+            <select name="code" aria-label="Country code">${CODES.map((c) => `<option>${c}</option>`).join('')}</select>
+            <label class="sr-only" for="siPhone">WhatsApp number</label>
+            <input id="siPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="WhatsApp number"></div>
+          <small class="signin-err" aria-live="polite"></small>
+          <button class="btn btn-yellow btn-block" type="submit">Sign in</button>
+        </form>
+        <button class="signin-guest" type="button" data-guest>Continue as guest →</button>
+        <p class="signin-note">We only use this to send you fares and booking updates. <a href="/privacy">Privacy Policy</a></p>
+      </div>`;
+    document.body.appendChild(m);
+    let mode = 'email';
+    const form = $('form', m), err = $('.signin-err', m);
+    $$('[data-mode]', m).forEach((t) => t.addEventListener('click', () => {
+      mode = t.dataset.mode;
+      $$('[data-mode]', m).forEach((x) => x.setAttribute('aria-selected', String(x === t)));
+      $$('[data-for]', m).forEach((x) => { x.hidden = x.dataset.for !== mode; });
+      err.textContent = '';
+      $(mode === 'email' ? '#siEmail' : '#siPhone').focus();
+    }));
+    const close = () => { m.hidden = true; document.body.classList.remove('modal-open'); };
+    $$('[data-signin-close]', m).forEach((b) => b.addEventListener('click', () => {
+      if (!getVisitor()) setVisitor({ mode: 'guest', at: Date.now() }); // closing = guest for now
+      close();
+    }));
+    $('[data-guest]', m).addEventListener('click', () => { setVisitor({ mode: 'guest', at: Date.now() }); close(); signinLabel(); });
+    m.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('[data-signin-close]', m).click(); });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = form.elements.name.value.trim();
+      let row, v;
+      if (mode === 'email') {
+        const email = form.elements.email.value.trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Please enter a valid email.'; return form.elements.email.focus(); }
+        row = { email, method: 'email' };
+        v = { mode: 'email', email };
+      } else {
+        const num = form.elements.phone.value.replace(/[^\d]/g, '');
+        if (num.length < 7 || num.length > 14) { err.textContent = 'Please enter a valid WhatsApp number.'; return form.elements.phone.focus(); }
+        const phone = `${form.elements.code.value} ${num}`;
+        row = { phone, method: 'whatsapp' };
+        v = { mode: 'whatsapp', phone };
+      }
+      const btn = $('button[type=submit]', form);
+      btn.disabled = true;
+      try {
+        await sb.insert('subscribers', { ...row, name: name || null, source: ('sign-in ' + location.pathname).slice(0, 40) });
+        setVisitor({ ...v, name: name || '', at: Date.now() });
+        close();
+        signinLabel();
+        prefillBooking();
+      } catch {
+        err.textContent = 'Could not sign you in right now. Please try again or continue as guest.';
+      }
+      btn.disabled = false;
+    });
+    return m;
+  }
+  function openSignin() {
+    const m = signinModal();
+    m.hidden = false;
+    document.body.classList.add('modal-open');
+    setTimeout(() => $('#siEmail', m).focus(), 50);
+  }
+  /* Fill the booking contact fields for signed-in visitors (only empty fields). */
+  function prefillBooking() {
+    const v = getVisitor();
+    if (!v || v.mode === 'guest') return;
+    const set = (sel, val) => { const el = $(sel); if (el && !el.value && val) el.value = val; };
+    set('#cName', v.name);
+    set('#cEmail', v.email);
+    if (v.phone) {
+      const [code, num] = v.phone.split(' ');
+      const sel = $('#cCode');
+      if (sel && [...sel.options].some((o) => o.value === code)) sel.value = code;
+      set('#cPhone', num);
+    }
+  }
+  $$('[data-signin]').forEach((b) => b.addEventListener('click', () => {
+    const v = getVisitor();
+    if (v && v.mode !== 'guest') {
+      if (confirm(`Signed in as ${v.email || v.phone}.\n\nSign out on this device?`)) { setVisitor(null); signinLabel(); }
+    } else openSignin();
+  }));
+  signinLabel();
+  prefillBooking();
+  (function autoAsk() {
+    const v = getVisitor();
+    const quiet = /^\/(admin|book)/.test(location.pathname);
+    const due = !v || (v.mode === 'guest' && Date.now() - (v.at || 0) > 3 * 864e5);
+    if (!quiet && due) setTimeout(() => { if (!document.body.classList.contains('modal-open')) openSignin(); }, 6000);
+  })();
+
   /* ---------- Blog: /blog list and /post?slug= page ---------- */
   const POST_CATS = { offer: 'Special Offer', weekly: 'Weekly Fares', tips: 'Travel Tip', news: 'News' };
   const postFields = 'slug,title,category,excerpt,cover_url,published_at';

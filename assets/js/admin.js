@@ -182,7 +182,7 @@
         <a class="stat" href="#bookings"><b>${newB}</b><span>New booking requests</span></a>
         <a class="stat" href="#bookings"><b>${weekB}</b><span>Bookings in the last 7 days</span></a>
         <a class="stat" href="#enquiries"><b>${newE}</b><span>New enquiries</span></a>
-        <a class="stat" href="#subscribers"><b>${subs}</b><span>Fare-alert subscribers</span></a>
+        <a class="stat" href="#subscribers"><b>${subs}</b><span>Sign-ins &amp; subscribers</span></a>
         <a class="stat" href="#posts"><b>${live}</b><span>Published blog posts</span></a>
         <a class="stat" href="#fares"><b>${fares.best ? esc(fmtDate(fares.best.updated, { day: 'numeric', month: 'short' })) : '—'}</b><span>Fares on site (${fares.best === fares.manual ? 'manual upload' : 'daily auto'})</span></a>
       </div>
@@ -362,19 +362,22 @@
      ====================================================================== */
   async function subscribers() {
     $('#main').innerHTML = `
-      <div class="page-head"><h1>Fare-alert subscribers</h1>
+      <div class="page-head"><h1>Sign-ins &amp; subscribers</h1>
         <button class="btn btn-ghost btn-sm" type="button" id="sCopy">Copy active emails</button>
         <button class="btn btn-ghost btn-sm" type="button" id="sExport">Export Excel (CSV)</button></div>
-      <p class="muted small">People who signed up with the "Get special fare alerts" box in the website footer.</p>
-      <div class="toolbar"><input type="search" id="sSearch" placeholder="Search email…"></div>
-      <div class="table-wrap"><table><thead><tr><th>Email</th><th>Signed up</th><th class="hide-m">Page</th><th>Status</th><th></th></tr></thead>
+      <p class="muted small">Visitors who signed in on the website (email or WhatsApp) or used the "Get special fare alerts" box in the footer.</p>
+      <div class="toolbar"><input type="search" id="sSearch" placeholder="Search name, email or number…">
+        <select id="sMethod"><option value="">Email &amp; WhatsApp</option><option value="email">Email only</option><option value="whatsapp">WhatsApp only</option></select></div>
+      <div class="table-wrap"><table><thead><tr><th>Contact</th><th>Signed up</th><th class="hide-m">Where</th><th>Status</th><th></th></tr></thead>
       <tbody id="sBody"></tbody></table></div>`;
     const { data, error } = await db.from('subscribers').select('*').order('created_at', { ascending: false }).limit(2000);
     if (error) throw error;
     const draw = () => {
       const q = $('#sSearch').value.trim().toLowerCase();
-      const rows = data.filter((r) => !q || r.email.includes(q));
-      $('#sBody').innerHTML = rows.length ? rows.map((r) => `<tr data-id="${r.id}"><td><b>${esc(r.email)}</b></td><td class="nowrap">${esc(when(r.created_at))}</td>
+      const mth = $('#sMethod').value;
+      const rows = data.filter((r) => (!mth || r.method === mth) && (!q || [r.email, r.phone, r.name].join(' ').toLowerCase().includes(q)));
+      $('#sBody').innerHTML = rows.length ? rows.map((r) => `<tr data-id="${r.id}"><td><b>${esc(r.email || r.phone || '')}</b>
+        <div class="small muted">${r.method === 'whatsapp' ? `💬 <a href="${esc(waLink(r.phone, `Hi${r.name ? ' ' + r.name : ''}, this is Sirpy Air Travels with today's special fares.`))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">WhatsApp</a>` : '✉️ Email'}${r.name ? ' · ' + esc(r.name) : ''}</div></td><td class="nowrap">${esc(when(r.created_at))}</td>
         <td class="hide-m">${esc(r.source)}</td><td>${pill(r.status)}</td>
         <td class="nowrap"><button class="btn btn-ghost btn-sm" data-toggle="${r.id}">${r.status === 'active' ? 'Unsubscribe' : 'Re-activate'}</button></td></tr>`).join('')
         : '<tr><td colspan="5" class="empty">No subscribers yet.</td></tr>';
@@ -389,9 +392,10 @@
       }));
     };
     $('#sSearch').addEventListener('input', draw);
+    $('#sMethod').addEventListener('change', draw);
     $('#sExport').addEventListener('click', () => csvDownload('subscribers', data.map(({ id, ...r }) => r)));
     $('#sCopy').addEventListener('click', async () => {
-      const list = data.filter((r) => r.status === 'active').map((r) => r.email).join(', ');
+      const list = data.filter((r) => r.status === 'active' && r.email).map((r) => r.email).join(', ');
       try { await navigator.clipboard.writeText(list); toast('Emails copied — paste into Gmail BCC'); } catch { prompt('Copy these emails:', list); }
     });
     draw();

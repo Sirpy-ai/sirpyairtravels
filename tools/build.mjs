@@ -143,7 +143,8 @@ function header(active) {
       <a class="hide-sm" href="mailto:Sirpytravels@gmail.com">${icon('mail')}Sirpytravels@gmail.com</a>
     </div>
     <div class="topbar-right">
-      <a href="/#pnr">${icon('ticket')}Check PNR</a>
+      <button class="tb-signin" type="button" data-signin>👤 Sign in</button>
+      <a class="hide-sm" href="/#pnr">${icon('ticket')}Check PNR</a>
       <span class="social">
         <a href="https://www.facebook.com/sirpyairtravels/" target="_blank" rel="noopener" aria-label="Facebook">${icon('fb')}</a>
         <a href="https://www.instagram.com/sirpyairtravels/" target="_blank" rel="noopener" aria-label="Instagram">${icon('ig')}</a>
@@ -165,6 +166,7 @@ function header(active) {
   <div class="drawer-panel" role="dialog" aria-modal="true" aria-label="Menu">
     <button class="close" type="button" aria-label="Close menu" data-drawer-close>&times;</button>
     ${drawerLinks}
+    <button class="btn btn-ghost" type="button" data-signin>👤 Sign in</button>
     <a class="btn btn-yellow" href="tel:+919344020864">${icon('phone')}Call 93440 20864</a>
     <a class="btn btn-wa" href="${wa('Hi Sirpy Air Travels, I need help with a booking.')}" target="_blank" rel="noopener">${icon('wa')}WhatsApp us</a>
   </div>
