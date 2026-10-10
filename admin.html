@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin — Sirpy Air Travels</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/admin.css?v=23d69291">
+</head>
+<body>
+
+<!-- Login -->
+<section class="login" id="loginView" hidden>
+  <div class="login-card">
+    <img src="/assets/img/logo.png" alt="Sirpy Air Travels" width="150" height="49">
+    <h1>Admin login</h1>
+    <form id="loginForm" novalidate>
+      <label for="loginEmail">Admin email</label>
+      <input id="loginEmail" type="email" autocomplete="email" required placeholder="you@gmail.com">
+      <button class="btn btn-yellow" type="submit">Email me a login link</button>
+    </form>
+    <form id="codeForm" hidden novalidate>
+      <p class="hint" id="codeHint"></p>
+      <label for="loginCode">Or type the code from the email</label>
+      <input id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456">
+      <button class="btn btn-dark" type="submit">Log in with code</button>
+      <button class="link" type="button" id="loginBack">Use a different email</button>
+    </form>
+    <p class="msg" id="loginMsg" aria-live="polite"></p>
+    <a class="back-site" href="/">← Back to the website</a>
+  </div>
+</section>
+
+<!-- Not an admin -->
+<section class="login" id="deniedView" hidden>
+  <div class="login-card">
+    <h1>No admin access</h1>
+    <p><b id="deniedEmail"></b> is not on the admin list.</p>
+    <button class="btn btn-dark" type="button" data-signout>Sign out</button>
+  </div>
+</section>
+
+<!-- Portal -->
+<div class="app" id="appView" hidden>
+  <header class="topbar">
+    <button class="burger" type="button" id="navToggle" aria-label="Menu">☰</button>
+    <a class="brand" href="/admin"><img src="/assets/img/logo.png" alt="Sirpy Air Travels" width="98" height="32"><span>Admin</span></a>
+    <span class="who" id="whoEmail"></span>
+    <a class="btn btn-ghost btn-sm" href="/" target="_blank" rel="noopener">View site</a>
+    <button class="btn btn-dark btn-sm" type="button" data-signout>Sign out</button>
+  </header>
+  <nav class="side" id="sideNav" aria-label="Admin sections">
+    <a href="#dashboard" data-tab="dashboard">📊 Dashboard</a>
+    <a href="#bookings" data-tab="bookings">✈️ Bookings <b class="badge" data-count="bookings"></b></a>
+    <a href="#enquiries" data-tab="enquiries">💬 Enquiries <b class="badge" data-count="enquiries"></b></a>
+    <a href="#subscribers" data-tab="subscribers">📧 Subscribers</a>
+    <a href="#posts" data-tab="posts">📝 Blog posts</a>
+    <a href="#fares" data-tab="fares">💲 Fares</a>
+  </nav>
+  <main class="main" id="main"></main>
+</div>
+
+<!-- Side drawer for one record -->
+<div class="drawer-bg" id="drawerBg" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-modal="true" role="dialog">
+  <button class="drawer-x" type="button" id="drawerClose" aria-label="Close">✕</button>
+  <div id="drawerBody"></div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="/assets/js/site.js?v=23d69291"></script>
+<script src="/assets/js/md.js?v=23d69291"></script>
+<script src="/assets/js/admin.js?v=23d69291"></script>
+</body>
+</html>

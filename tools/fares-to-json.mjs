@@ -120,6 +120,7 @@ const airlines = Object.fromEntries(Object.entries(AIRLINE_CODES).filter(([, c])
 
 const data = {
   updated: new Date(newest).toLocaleDateString('en-CA'), // local date (TZ=Asia/Singapore in CI)
+  generatedAt: new Date().toISOString(), // the site uses the newer of this and an admin manual upload
   source: 'Google Flights scrape',
   currency: 'SGD',
   fields: ['date', 'from', 'to', 'airline', 'dep', 'arr', 'arrDayOffset', 'durationMin', 'priceSGD'],

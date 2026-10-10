@@ -18,6 +18,13 @@
     FARES_PREV_URL: '/assets/data/fares-prev.json',
     DEFAULT_ROUTE: 'SIN-TRZ',
 
+    /* Supabase (CRM, blog posts, manually uploaded fares). The anon key is
+       public by design: row-level security only lets visitors SEND bookings,
+       enquiries and signups and READ published posts. Never put the
+       service_role key here. */
+    SUPABASE_URL: 'https://lvbdtqefyyfzmxrurrgd.supabase.co',
+    SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2YmR0cWVmeXlmem14cnVycmdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2NTA0MjAsImV4cCI6MjEwNzIyNjQyMH0.uZkLEY-omAavmhwQlpyfqheOBmW1bd4s8NfECoDImNM',
+
     /* Checked baggage added to the shown fare, in INR per passenger per flight.
        fromSIN = Singapore → Tamil Nadu, toSIN = Tamil Nadu → Singapore.
        included: true means the fare already has it (nothing added). */
@@ -215,13 +222,46 @@
   /* ---------- Fare data ---------- */
   const toFlight = ([date, from, to, airline, dep, arr, plus, dur, fare]) =>
     ({ date, from, to, airline, dep, arr, plus, dur, fare, id: `${date}|${from}|${to}|${airline}|${dep}` });
+  /* ---------- Supabase (plain REST, no library on public pages) ---------- */
+  const sb = {
+    headers: (extra) => ({ apikey: SIRPY.SUPABASE_KEY, Authorization: `Bearer ${SIRPY.SUPABASE_KEY}`, ...extra }),
+    /* Visitors can insert but never read back, so ask for no response body. */
+    async insert(table, row) {
+      const r = await fetch(`${SIRPY.SUPABASE_URL}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: sb.headers({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+        body: JSON.stringify(row)
+      });
+      if (!r.ok && r.status !== 409) throw new Error(`${table} ${r.status}`); // 409 = already subscribed
+      return true;
+    },
+    async select(table, query) {
+      const r = await fetch(`${SIRPY.SUPABASE_URL}/rest/v1/${table}?${query}`, { headers: sb.headers() });
+      if (!r.ok) throw new Error(`${table} ${r.status}`);
+      return r.json();
+    },
+    publicFile: (bucket, path) => `${SIRPY.SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`
+  };
+
+  /* Fares come from the daily automatic update (in the repo) or a manual upload
+     from the admin portal (Supabase storage). Whichever was generated later wins. */
+  const stamp = (d) => (d && (d.generatedAt || (d.updated && d.updated + 'T00:00:00+08:00'))) || '';
+  const fetchJson = (url) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  async function newestFares() {
+    const hour = Math.floor(Date.now() / 3.6e6);
+    const [auto, manual] = await Promise.all([
+      fetchJson(SIRPY.FARES_URL),
+      fetchJson(sb.publicFile('site-data', `fares.json?h=${hour}`))
+    ]);
+    const best = manual && manual.flights && (!auto || stamp(manual) > stamp(auto)) ? manual : auto;
+    if (!best) throw new Error('fares unavailable');
+    return best;
+  }
+
   let faresPromise;
   function loadFares() {
     if (faresPromise) return faresPromise;
-    faresPromise = Promise.all([
-      fetch(SIRPY.FARES_URL).then((r) => { if (!r.ok) throw new Error('fares ' + r.status); return r.json(); }),
-      getRate()
-    ]).then(([data, rate]) => {
+    faresPromise = Promise.all([newestFares(), getRate()]).then(([data, rate]) => {
       const t = today();
       const flights = data.flights.filter((f) => f[0] >= t).map(toFlight);
       flights.forEach((f) => { f.p = priceOf(f, rate); });
@@ -486,6 +526,11 @@
       }
       const msg = `Hi Sirpy Air Travels,\nName: ${v('name')}\nPhone: ${v('phone')}\nService: ${v('service')}${v('date') ? `\nTravel date: ${v('date')}` : ''}${v('message') ? `\n\n${v('message')}` : ''}`;
       window.open(wa(msg), '_blank', 'noopener');
+      sb.insert('enquiries', {
+        name: v('name').slice(0, 120), phone: v('phone').slice(0, 40),
+        subject: [v('service'), v('date') && `travel ${v('date')}`].filter(Boolean).join(' · ').slice(0, 200),
+        message: v('message').slice(0, 4000) || null, source: 'contact page'
+      }).catch(() => { /* WhatsApp copy is enough */ });
     });
     enq.addEventListener('input', (e) => e.target.removeAttribute('aria-invalid'));
   }
@@ -881,9 +926,98 @@
   });
 
   /* Shared with booking.js */
+  /* ---------- Fare alerts signup (footer) ---------- */
+  $$('[data-subscribe]').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = form.elements.email.value.trim().toLowerCase();
+      const note = $('[data-subscribe-note]', form);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { note.textContent = 'Please enter a valid email.'; form.elements.email.focus(); return; }
+      const btn = $('button', form);
+      btn.disabled = true;
+      try {
+        await sb.insert('subscribers', { email, source: location.pathname.slice(0, 40) || '/' });
+        form.reset();
+        note.textContent = 'Thank you! We will email you our special fares.';
+      } catch {
+        note.textContent = 'Could not sign you up right now. Please WhatsApp us instead.';
+      }
+      btn.disabled = false;
+    });
+  });
+
+  /* ---------- Blog: /blog list and /post?slug= page ---------- */
+  const POST_CATS = { offer: 'Special Offer', weekly: 'Weekly Fares', tips: 'Travel Tip', news: 'News' };
+  const postFields = 'slug,title,category,excerpt,cover_url,published_at';
+  const postDate = (p) => (p.published_at ? fmtDate(ymd(new Date(p.published_at)), { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+  const postCard = (p) => `<a class="card blog-card" href="/post?slug=${encodeURIComponent(p.slug)}">
+      <div class="img"><span class="tag">${esc(POST_CATS[p.category] || 'News')}</span>${p.cover_url ? `<img src="${esc(p.cover_url)}" alt="" loading="lazy">` : ''}</div>
+      <div class="body"><h3>${esc(p.title)}</h3>${p.excerpt ? `<p>${esc(p.excerpt)}</p>` : ''}<span class="more">${esc(postDate(p))} · Read more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+    </a>`;
+
+  async function initBlogList() {
+    const grid = $('#postGrid');
+    if (!grid) return;
+    const tabs = $$('[data-cat]');
+    let posts = [];
+    const render = (cat) => {
+      tabs.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.cat === cat)));
+      const list = cat === 'all' ? posts : posts.filter((p) => p.category === cat);
+      grid.innerHTML = list.length ? list.map(postCard).join('')
+        : '<p class="empty-note">No posts here yet — check our <a href="/offers">Special Offers</a> and <a href="/travel-tips">Travel Tips</a>.</p>';
+    };
+    tabs.forEach((t) => t.addEventListener('click', () => render(t.dataset.cat)));
+    try {
+      posts = await sb.select('posts', `select=${postFields}&status=eq.published&order=published_at.desc&limit=60`);
+      render('all');
+    } catch {
+      grid.innerHTML = '<p class="empty-note">Posts could not load. Please refresh the page.</p>';
+    }
+  }
+  initBlogList();
+
+  /* Latest posts strip on any page with #latestPosts (hidden if there are none). */
+  async function initLatestPosts() {
+    const box = $('#latestPosts');
+    if (!box) return;
+    try {
+      const posts = await sb.select('posts', `select=${postFields}&status=eq.published&order=published_at.desc&limit=4`);
+      if (!posts.length) return;
+      $('.grid-4', box).innerHTML = posts.map(postCard).join('');
+      box.hidden = false;
+    } catch { /* stays hidden */ }
+  }
+  initLatestPosts();
+
+  async function initPost() {
+    const box = $('#postBody');
+    if (!box) return;
+    const slug = new URLSearchParams(location.search).get('slug') || '';
+    const notFound = () => {
+      $('#postTitle').textContent = 'Post not found';
+      box.innerHTML = '<p>This post may have been removed. See all <a href="/blog">blog posts</a>.</p>';
+    };
+    if (!/^[a-z0-9-]+$/.test(slug)) return notFound();
+    try {
+      const [p] = await sb.select('posts', `select=${postFields},body&slug=eq.${slug}&status=eq.published&limit=1`);
+      if (!p) return notFound();
+      document.title = `${p.title} — Sirpy Air Travels`;
+      const desc = $('meta[name=description]');
+      if (desc && p.excerpt) desc.setAttribute('content', p.excerpt);
+      $('#postTitle').textContent = p.title;
+      $('#postCrumb').textContent = p.title;
+      $('#postMeta').textContent = `${POST_CATS[p.category] || 'News'} · ${postDate(p)}`;
+      if (p.cover_url) { const img = $('#postCover'); img.src = p.cover_url; img.alt = p.title; img.hidden = false; }
+      box.innerHTML = window.SirpyMd ? window.SirpyMd(p.body) : esc(p.body);
+    } catch {
+      box.innerHTML = '<p>The post could not load. Please refresh the page.</p>';
+    }
+  }
+  initPost();
+
   window.SirpySite = {
     SIRPY, $, $$, esc, store, wa, ymd, parseYmd, addDays, daysBetween, today, fmtDate, fmt12, fmtDur, nf,
     logoImg, logoUrl, airlineName, getRate, money, loadFares, inRoute, reverseKey, cheapest,
-    roundTrips, priceHtml, sumPrices, baggageFor, bagLabel, comboHtml, shareBtn
+    roundTrips, priceHtml, sumPrices, baggageFor, bagLabel, comboHtml, shareBtn, sb
   };
 })();

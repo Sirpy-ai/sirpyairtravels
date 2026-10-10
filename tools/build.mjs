@@ -31,6 +31,9 @@ const ASSET_VERSION = createHash('sha1')
   .update(await readFile(join(SITE, 'assets/css/site.css')))
   .update(await readFile(join(SITE, 'assets/js/site.js')))
   .update(await readFile(join(SITE, 'assets/js/booking.js')))
+  .update(await readFile(join(SITE, 'assets/js/md.js')))
+  .update(await readFile(join(SITE, 'assets/js/admin.js')))
+  .update(await readFile(join(SITE, 'assets/css/admin.css')))
   .digest('hex').slice(0, 8);
 
 const WA_NUMBER = '919344020864';
@@ -195,6 +198,11 @@ function footer() {
           <a href="https://www.instagram.com/sirpyairtravels/" target="_blank" rel="noopener" aria-label="Instagram">${icon('ig')}</a>
           <a href="https://www.youtube.com/@sirpyairtravels" target="_blank" rel="noopener" aria-label="YouTube">${icon('yt')}</a>
         </div>
+        <form class="subscribe" data-subscribe novalidate>
+          <label for="subEmail">Get special fare alerts by email</label>
+          <div class="subscribe-row"><input id="subEmail" name="email" type="email" autocomplete="email" placeholder="you@example.com" required><button class="btn btn-yellow btn-sm" type="submit">Subscribe</button></div>
+          <small data-subscribe-note aria-live="polite"></small>
+        </form>
       </div>
       <div>
         <h4>Flights</h4>
@@ -214,6 +222,7 @@ function footer() {
           <li><a href="/diwali-fares">Diwali Fares 2026</a></li>
           <li><a href="/weekly-fares">Special Fares This Week</a></li>
           <li><a href="/top-fares">Top 10 Lowest Fares</a></li>
+          <li><a href="/blog">Blog</a></li>
           <li><a href="/travel-tips">Travel Tips</a></li>
           <li><a href="/tours">Tour Packages</a></li>
           <li><a href="/#pnr">Check PNR</a></li>
@@ -310,3 +319,9 @@ ${meta.nofooterCta ? footer().replace(/<section class="cta-band">[\s\S]*?<\/sect
   await writeFile(join(SITE, file), html);
   console.log('built', file);
 }
+
+/* admin.html is hand-written (no site header/footer); just refresh its asset versions. */
+const adminPath = join(SITE, 'admin.html');
+const admin = await readFile(adminPath, 'utf8');
+await writeFile(adminPath, admin.replace(/(\/assets\/(?:css|js)\/[\w-]+\.(?:css|js))\?v=[\w]+/g, `$1?v=${ASSET_VERSION}`));
+console.log('versioned admin.html');

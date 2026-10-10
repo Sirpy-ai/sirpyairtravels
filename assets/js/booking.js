@@ -8,7 +8,7 @@
   const S = window.SirpySite;
   if (!S) return;
   const { SIRPY, $, $$, esc, wa, addDays, daysBetween, today, fmtDate, fmt12, fmtDur, logoImg, airlineName,
-          money, loadFares, inRoute, reverseKey, cheapest, roundTrips, priceHtml, sumPrices, bagLabel, parseYmd, shareBtn } = S;
+          money, loadFares, inRoute, reverseKey, cheapest, roundTrips, priceHtml, sumPrices, bagLabel, parseYmd, shareBtn, sb } = S;
 
   const params = new URLSearchParams(location.search);
   const paxFromParams = () => {
@@ -500,6 +500,23 @@ Contact: ${booking.contact.name}, ${booking.contact.phone}, ${booking.contact.em
       const btn = $('#sendBtn');
       btn.disabled = true;
       btn.textContent = 'Sending…';
+
+      /* Save to the CRM (admin portal). Runs alongside the email; a failure
+         here never blocks the customer, WhatsApp already has everything. */
+      const saved = sb.insert('bookings', {
+        ref, trip: back ? 'rt' : 'ow',
+        route: `${out.from}-${out.to}`,
+        depart_date: out.date, return_date: back ? back.date : null,
+        flights: legs.map((f) => ({ id: f.id, airline: f.airline, from: f.from, to: f.to, date: f.date, dep: f.dep, arr: f.arr, plus: f.plus, sgd: f.p.sgd, inr: f.p.inr, bag: bagLabel(f.p.bag) })),
+        adults: pax.ad, children: pax.ch, infants: pax.inf,
+        passengers: booking.travellers,
+        contact_name: booking.contact.name.slice(0, 120),
+        phone: booking.contact.phone.slice(0, 40),
+        email: booking.contact.email.slice(0, 160),
+        total_sgd: total.sgd, total_inr: total.inr,
+        message: booking.contact.notes ? booking.contact.notes.slice(0, 2000) : null
+      }).catch(() => false);
+
       let emailed = false;
       try {
         const r = await fetch(SIRPY.EMAIL_ENDPOINT, {
@@ -517,6 +534,7 @@ Contact: ${booking.contact.name}, ${booking.contact.phone}, ${booking.contact.em
         const j = await r.json().catch(() => ({}));
         emailed = r.ok && String(j.success) === 'true';
       } catch { /* WhatsApp copy is enough */ }
+      await saved;
 
       $('#stepReview').hidden = true;
       $('#stepDone').hidden = false;
