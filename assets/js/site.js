@@ -954,6 +954,17 @@
   const getVisitor = () => { try { return JSON.parse(localStorage.getItem(VISITOR_KEY)); } catch { return null; } };
   const setVisitor = (v) => { try { v ? localStorage.setItem(VISITOR_KEY, JSON.stringify(v)) : localStorage.removeItem(VISITOR_KEY); } catch { /* private mode */ } };
   const CODES = ['+91', '+65', '+60', '+94', '+971'];
+  const GOOGLE_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+
+  /* Google sign-in shows only once it is switched on in Supabase (Auth → Providers → Google). */
+  let googlePromise;
+  function googleEnabled() {
+    if (!googlePromise) {
+      googlePromise = fetch(`${SIRPY.SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SIRPY.SUPABASE_KEY } })
+        .then((r) => r.json()).then((j) => !!(j.external && j.external.google)).catch(() => false);
+    }
+    return googlePromise;
+  }
 
   function signinLabel() {
     const v = getVisitor();
@@ -978,6 +989,8 @@
         <img src="/assets/img/logo.png" alt="" width="120" height="39">
         <h2 id="signinTitle">Welcome to Sirpy Air Travels</h2>
         <p>Sign in to get <b>special fare alerts</b> and book faster. No password needed.</p>
+        <button class="signin-google" type="button" data-google hidden>${GOOGLE_SVG}Continue with Google</button>
+        <div class="signin-or" data-google hidden><span>or</span></div>
         <div class="signin-tabs" role="tablist">
           <button type="button" role="tab" data-mode="email" aria-selected="true">✉️ Email</button>
           <button type="button" role="tab" data-mode="whatsapp" aria-selected="false">💬 WhatsApp</button>
@@ -1012,6 +1025,11 @@
       if (!getVisitor()) setVisitor({ mode: 'guest', at: Date.now() }); // closing = guest for now
       close();
     }));
+    googleEnabled().then((on) => { if (on) $$('[data-google]', m).forEach((x) => { x.hidden = false; }); });
+    $('button[data-google]', m).addEventListener('click', () => {
+      const back = location.origin + location.pathname + location.search;
+      location.href = `${SIRPY.SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(back)}`;
+    });
     $('[data-guest]', m).addEventListener('click', () => { setVisitor({ mode: 'guest', at: Date.now() }); close(); signinLabel(); });
     m.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('[data-signin-close]', m).click(); });
     form.addEventListener('submit', async (e) => {
@@ -1065,6 +1083,28 @@
       set('#cPhone', num);
     }
   }
+  /* Back from Google, the address ends in #access_token=… : read the name and
+     email from it, save the sign-in, and clean the address bar. The token itself
+     is not kept. (/admin has its own login and handles its own tokens.) */
+  (function googleReturn() {
+    if (/^\/admin/.test(location.pathname)) return;
+    const h = new URLSearchParams(location.hash.slice(1));
+    if (!h.get('access_token') && !h.get('error')) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    const token = h.get('access_token');
+    if (!token) return;
+    try {
+      const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const claims = JSON.parse(decodeURIComponent(escape(atob(b64))));
+      const meta = claims.user_metadata || {};
+      const email = String(claims.email || meta.email || '').toLowerCase();
+      if (!email) return;
+      const name = String(meta.full_name || meta.name || '').slice(0, 120);
+      setVisitor({ mode: 'google', email, name, at: Date.now() });
+      sb.insert('subscribers', { email, name: name || null, method: 'google', source: ('google ' + location.pathname).slice(0, 40) }).catch(() => {});
+    } catch { /* malformed token: ignore */ }
+  })();
+
   $$('[data-signin]').forEach((b) => b.addEventListener('click', () => {
     const v = getVisitor();
     if (v && v.mode !== 'guest') {

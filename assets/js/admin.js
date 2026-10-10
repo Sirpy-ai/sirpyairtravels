@@ -94,6 +94,13 @@
     $('#codeForm').hidden = false;
     $('#codeHint').innerHTML = `We emailed <b>${esc(loginEmail)}</b>. Open the email on this device and tap the login link.`;
   });
+  /* Google login appears once Google is switched on in Supabase (Auth → Providers). */
+  fetch(`${SIRPY.SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SIRPY.SUPABASE_KEY } })
+    .then((r) => r.json()).then((j) => { if (j.external && j.external.google) $('#googleLogin').hidden = false; }).catch(() => {});
+  $('#googleLogin').addEventListener('click', async () => {
+    const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/admin' } });
+    if (error) $('#loginMsg').textContent = error.message;
+  });
   $('#codeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const token = $('#loginCode').value.replace(/\s/g, '');
@@ -367,7 +374,7 @@
         <button class="btn btn-ghost btn-sm" type="button" id="sExport">Export Excel (CSV)</button></div>
       <p class="muted small">Visitors who signed in on the website (email or WhatsApp) or used the "Get special fare alerts" box in the footer.</p>
       <div class="toolbar"><input type="search" id="sSearch" placeholder="Search name, email or number…">
-        <select id="sMethod"><option value="">Email &amp; WhatsApp</option><option value="email">Email only</option><option value="whatsapp">WhatsApp only</option></select></div>
+        <select id="sMethod"><option value="">Email &amp; WhatsApp</option><option value="email">Email only</option><option value="whatsapp">WhatsApp only</option><option value="google">Google only</option></select></div>
       <div class="table-wrap"><table><thead><tr><th>Contact</th><th>Signed up</th><th class="hide-m">Where</th><th>Status</th><th></th></tr></thead>
       <tbody id="sBody"></tbody></table></div>`;
     const { data, error } = await db.from('subscribers').select('*').order('created_at', { ascending: false }).limit(2000);
@@ -377,7 +384,7 @@
       const mth = $('#sMethod').value;
       const rows = data.filter((r) => (!mth || r.method === mth) && (!q || [r.email, r.phone, r.name].join(' ').toLowerCase().includes(q)));
       $('#sBody').innerHTML = rows.length ? rows.map((r) => `<tr data-id="${r.id}"><td><b>${esc(r.email || r.phone || '')}</b>
-        <div class="small muted">${r.method === 'whatsapp' ? `💬 <a href="${esc(waLink(r.phone, `Hi${r.name ? ' ' + r.name : ''}, this is Sirpy Air Travels with today's special fares.`))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">WhatsApp</a>` : '✉️ Email'}${r.name ? ' · ' + esc(r.name) : ''}</div></td><td class="nowrap">${esc(when(r.created_at))}</td>
+        <div class="small muted">${r.method === 'whatsapp' ? `💬 <a href="${esc(waLink(r.phone, `Hi${r.name ? ' ' + r.name : ''}, this is Sirpy Air Travels with today's special fares.`))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">WhatsApp</a>` : r.method === 'google' ? 'G Google' : '✉️ Email'}${r.name ? ' · ' + esc(r.name) : ''}</div></td><td class="nowrap">${esc(when(r.created_at))}</td>
         <td class="hide-m">${esc(r.source)}</td><td>${pill(r.status)}</td>
         <td class="nowrap"><button class="btn btn-ghost btn-sm" data-toggle="${r.id}">${r.status === 'active' ? 'Unsubscribe' : 'Re-activate'}</button></td></tr>`).join('')
         : '<tr><td colspan="5" class="empty">No subscribers yet.</td></tr>';

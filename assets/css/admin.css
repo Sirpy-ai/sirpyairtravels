@@ -158,3 +158,4 @@ td.nowrap, .nowrap { white-space: nowrap; }
   .hide-m { display: none; }
   .kv { grid-template-columns: 100px 1fr; }
 }
+.google-btn { width: 100%; margin-bottom: 14px; }
