@@ -702,7 +702,15 @@
         <div id="fResult"></div>
       </section>
       <section class="card"><h2>Upload history</h2>${log.data && log.data.length ? `<table><tbody>${log.data.map((u) => `<tr><td class="nowrap">${esc(when(u.created_at))}</td><td>${esc(u.uploaded_by || '')}</td>
-        <td>${esc(u.flights)} flights · ${esc(day(u.date_from))} – ${esc(day(u.date_to))}<div class="small muted">${esc((u.file_names || []).join(', '))}</div></td></tr>`).join('')}</tbody></table>` : '<p class="muted">No manual uploads yet.</p>'}</section>`;
+        <td>${esc(u.flights)} flights · ${esc(day(u.date_from))} – ${esc(day(u.date_to))}
+          <div class="small">${(u.file_names || []).map((n, i) => (u.file_paths && u.file_paths[i]
+            ? `<button class="link" type="button" data-dl="${esc(u.file_paths[i])}">⬇ ${esc(n)}</button>`
+            : `<span class="muted">${esc(n)} (copy not saved)</span>`)).join('<br>')}</div></td></tr>`).join('')}</tbody></table>` : '<p class="muted">No manual uploads yet.</p>'}</section>`;
+    $$('[data-dl]').forEach((b) => b.addEventListener('click', async () => {
+      const { data, error } = await db.storage.from('fare-uploads').createSignedUrl(b.dataset.dl, 300);
+      if (error) return fail(error);
+      window.open(data.signedUrl, '_blank', 'noopener');
+    }));
 
     if (cur.manual) $('#fRevert').addEventListener('click', async () => {
       if (!confirm('Remove the manual fares? The website goes back to the daily automatic fares.')) return;
@@ -770,10 +778,23 @@
       const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const { error } = await db.storage.from('site-data').upload('fares.json', blob, { upsert: true, contentType: 'application/json', cacheControl: '60' });
       if (error) { btn.disabled = false; btn.textContent = 'Publish to website'; return fail(error); }
-      await db.from('fare_uploads').insert({
-        uploaded_by: me.email, file_names: files.map((f) => f.name).slice(0, 20), flights: merged.length,
-        date_from: merged[0] && merged[0][0], date_to: merged.at(-1) && merged.at(-1)[0], airlines: check.airlines
+
+      /* Keep a copy of each original file in the private fare-uploads bucket,
+         so the history can offer it for download later. */
+      const stamp = Date.now().toString(36);
+      const filePaths = [];
+      let copyFailed = false;
+      for (const f of files) {
+        const path = `${stamp}/${f.name.replace(/[^\w.-]+/g, '_')}`;
+        const up = await db.storage.from('fare-uploads').upload(path, f, { contentType: f.type || 'application/octet-stream', upsert: false });
+        if (up.error) copyFailed = true; else filePaths.push(path);
+      }
+      const { error: logErr } = await db.from('fare_uploads').insert({
+        uploaded_by: me.email, file_names: files.map((f) => f.name).slice(0, 20), file_paths: filePaths.slice(0, 20),
+        flights: merged.length, date_from: merged[0] && merged[0][0], date_to: merged.at(-1) && merged.at(-1)[0], airlines: check.airlines
       });
+      if (logErr) console.error(logErr);
+      if (copyFailed) toast('Fares published, but a copy of a file could not be saved', true);
       toast('Fares published — the website uses them within a minute');
       route();
     });

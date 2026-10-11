@@ -357,6 +357,20 @@
       <fieldset class="pax-block" data-i="${i}" data-type="${t.type}">
         <legend class="sr-only">${t.type} ${t.n}</legend>
         <h3>${t.type} ${t.n} <span>${ageHint[t.type]}</span></h3>
+        <div class="pf" data-pf>
+          <button class="pf-open" type="button" aria-expanded="false">📷 Passport Fetcher <span>read the passport photo to fill this form</span></button>
+          <div class="pf-body" hidden>
+            <label class="pf-drop">Choose passport photo <input type="file" accept="image/*" capture="environment" data-pf-file hidden></label>
+            <p class="pf-note">Read on this computer. The photo is not uploaded or saved. Values appear faintly in the boxes: type over them, or press <b>Fill auto</b>.</p>
+            <div class="pf-status" aria-live="polite"></div>
+            <dl class="pf-read" hidden></dl>
+            <div class="pf-actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-pf-fill hidden>Fill auto</button>
+              <button type="button" class="btn btn-yellow btn-sm" data-pf-confirm hidden>Confirm</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-pf-recheck hidden>Recheck</button>
+            </div>
+          </div>
+        </div>
         <div class="form-grid">
           <div class="f c-2 keep"><label for="p${i}t">Title</label><select id="p${i}t" name="title" required>${t.titles.map((x) => `<option>${x}</option>`).join('')}</select></div>
           <div class="f c-5"><label for="p${i}f">First &amp; middle name</label><input id="p${i}f" name="first" autocomplete="given-name" required placeholder="As on passport"><span class="err"></span></div>

@@ -934,3 +934,23 @@ body.modal-open { overflow: hidden; }
 .signin-google svg { width: 20px; height: 20px; }
 .signin-or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 12px 0; }
 .signin-or::before, .signin-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* ---------- Passport Fetcher (booking traveller details) ---------- */
+.pf { margin: 0 0 14px; border: 1.5px dashed var(--line); border-radius: 12px; background: #fffdf5; }
+.pf-open { width: 100%; text-align: left; padding: 10px 14px; border: 0; background: none; font: inherit; font-weight: 700; cursor: pointer; color: var(--ink); }
+.pf-open span { font-weight: 500; color: var(--muted); font-size: 12.5px; margin-left: 6px; }
+.pf-body { padding: 0 14px 14px; display: grid; gap: 10px; }
+.pf-drop { display: inline-block; justify-self: start; padding: 8px 14px; border-radius: 8px; background: var(--ink); color: var(--yellow); font-weight: 600; font-size: 13px; cursor: pointer; }
+.pf-note { margin: 0; font-size: 12px; color: var(--muted); }
+.pf-status { font-size: 13px; font-weight: 600; min-height: 1.3em; }
+.pf-status.bad { color: #b26a00; }
+.pf-read { display: grid; grid-template-columns: 120px 1fr; gap: 4px 10px; margin: 0; font-size: 13px; }
+.pf-read dt { color: var(--muted); }
+.pf-read dd { margin: 0; }
+.pf-ok-mark { color: var(--ok); font-size: 12px; }
+.pf-bad-mark { color: #b26a00; font-size: 12px; }
+.pf-diff { color: #c62828; font-size: 12px; }
+.pf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Read values show as a faint watermark inside the empty box. */
+input.pf-ghost::placeholder { color: #9a8a4a; opacity: .75; font-style: italic; }
+input.pf-ok, select.pf-ok { border-color: var(--ok); }
