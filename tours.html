@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/site.css?v=85fc2a7a">
+<link rel="stylesheet" href="/assets/css/site.css?v=32a3bc85">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -75,75 +75,85 @@
       <button class="filter" type="button" data-filter="international" aria-pressed="false">International</button>
       <button class="filter" type="button" data-filter="domestic" aria-pressed="false">India</button>
       <button class="filter" type="button" data-filter="pilgrimage" aria-pressed="false">Pilgrimage</button>
-      <button class="filter" type="button" data-filter="honeymoon" aria-pressed="false">Honeymoon</button>
       <button class="filter" type="button" data-filter="cruise" aria-pressed="false">Cruise</button>
       <button class="filter" type="button" data-filter="group" aria-pressed="false">Group &amp; Corporate</button>
     </div>
     <div class="grid-3" id="pkgGrid">
-      <article class="card pkg" data-category="international">
+      <article class="card pkg" data-plan="sg-my" data-category="international">
         <div class="pkg-img"><span class="pkg-badge">Bestseller</span><span class="pkg-days">6N / 7D</span><img src="/assets/img/tours/singapore-malaysia.webp" alt="Marina Bay Sands, Singapore" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>Singapore &amp; Malaysia Twin Wonder</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Singapore &amp; Kuala Lumpur</p>
           <ul class="pkg-hl"><li>Universal Studios Singapore</li><li>Gardens by the Bay &amp; Sentosa</li><li>Batu Caves &amp; Genting Highlands</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><s>₹49,999</s><b>₹42,500</b><small>per person</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20Singapore%20%26%20Malaysia%20Twin%20Wonder%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
-      <article class="card pkg" data-category="honeymoon">
+      <article class="card pkg" data-plan="bali" data-category="international">
         <div class="pkg-img"><span class="pkg-badge">Trending</span><span class="pkg-days">5N / 6D</span><img src="/assets/img/tours/bali.webp" alt="Kelingking cliff, Nusa Penida, Bali" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>Enchanting Bali &amp; Nusa Penida</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Bali, Indonesia</p>
           <ul class="pkg-hl"><li>Private pool villa stay</li><li>Nusa Penida speedboat tour</li><li>Ubud jungle swing</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><s>₹41,000</s><b>₹34,999</b><small>per person</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20Enchanting%20Bali%20%26%20Nusa%20Penida%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
-      <article class="card pkg" data-category="domestic">
+      <article class="card pkg" data-plan="kashmir" data-category="domestic">
         <div class="pkg-img"><span class="pkg-badge">Popular</span><span class="pkg-days">6N / 7D</span><img src="/assets/img/tours/kashmir.webp" alt="Houseboats on Dal Lake, Kashmir" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>Majestic Kashmir &amp; Dal Lake</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Srinagar, Gulmarg &amp; Pahalgam</p>
           <ul class="pkg-hl"><li>Deluxe houseboat on Dal Lake</li><li>Gulmarg gondola cable car</li><li>Betaab Valley &amp; Sonamarg</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><s>₹27,999</s><b>₹22,500</b><small>per person</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20Majestic%20Kashmir%20%26%20Dal%20Lake%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
-      <article class="card pkg" data-category="pilgrimage">
+      <article class="card pkg" data-plan="temple-trail" data-category="pilgrimage">
         <div class="pkg-img"><span class="pkg-badge">Spiritual</span><span class="pkg-days">5N / 6D</span><img src="/assets/img/tours/temple-trail.webp" alt="Brihadeeswarar Temple, Thanjavur" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>Sacred South India Temple Trail</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Trichy, Tanjore, Madurai &amp; Rameshwaram</p>
           <ul class="pkg-hl"><li>Srirangam Ranganathaswamy</li><li>Tanjore UNESCO Chola temple</li><li>Rameshwaram 22 theerthams</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><s>₹22,000</s><b>₹18,500</b><small>per person</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20Sacred%20South%20India%20Temple%20Trail%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
-      <article class="card pkg" data-category="international">
+      <article class="card pkg" data-plan="dubai" data-category="international">
         <div class="pkg-img"><span class="pkg-badge">Luxury</span><span class="pkg-days">4N / 5D</span><img src="/assets/img/tours/dubai.webp" alt="Dubai skyline with the Burj Khalifa" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>Grand Dubai Future City &amp; Desert</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Dubai, UAE</p>
           <ul class="pkg-hl"><li>Burj Khalifa At The Top</li><li>Museum of the Future</li><li>Dune bashing with BBQ dinner</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><s>₹56,000</s><b>₹48,000</b><small>per person</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20Grand%20Dubai%20Future%20City%20%26%20Desert%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
-      <article class="card pkg" data-category="international">
+      <article class="card pkg" data-plan="thailand" data-category="international">
         <div class="pkg-img"><span class="pkg-badge">Island Deal</span><span class="pkg-days">5N / 6D</span><img src="/assets/img/tours/thailand.webp" alt="Boats in Maya Bay, Phi Phi Islands" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>Thailand Islands &amp; Bangkok</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Phuket, Krabi &amp; Bangkok</p>
           <ul class="pkg-hl"><li>Phi Phi island speedboat day</li><li>James Bond Island canoeing</li><li>Bangkok city &amp; temple tour</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><s>₹37,000</s><b>₹31,500</b><small>per person</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20Thailand%20Islands%20%26%20Bangkok%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
-      <article class="card pkg" data-category="cruise">
+      <article class="card pkg" data-plan="sg-cruise" data-category="cruise">
         <div class="pkg-img"><span class="pkg-badge">Cruise</span><span class="pkg-days">3N / 4D</span><img src="/assets/img/tours/singapore-cruise.webp" alt="Cruise ship at a tropical beach" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>Singapore Short Sailing Cruise</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Departs Singapore</p>
           <ul class="pkg-hl"><li>Interior to balcony cabin options</li><li>Full-board dining on ship</li><li>Shore excursion planning</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><b>On request</b><small>ask for a quote</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20Singapore%20Short%20Sailing%20Cruise%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
-      <article class="card pkg" data-category="cruise">
+      <article class="card pkg" data-plan="india-cruise" data-category="cruise">
         <div class="pkg-img"><span class="pkg-badge">Cruise</span><span class="pkg-days">2N / 3D</span><img src="/assets/img/tours/india-cruise.webp" alt="Cruise ship sailing at sunset" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>India Coastal Cruise Getaway</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>West &amp; East coast sailings</p>
           <ul class="pkg-hl"><li>Weekend sailing options</li><li>Family and group cabins</li><li>Onboard entertainment included</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><b>On request</b><small>ask for a quote</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20India%20Coastal%20Cruise%20Getaway%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
-      <article class="card pkg" data-category="domestic">
+      <article class="card pkg" data-plan="kerala" data-category="domestic">
         <div class="pkg-img"><span class="pkg-badge">Backwaters</span><span class="pkg-days">5N / 6D</span><img src="/assets/img/tours/kerala.webp" alt="Houseboat on the Kerala backwaters" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>Kerala Backwaters &amp; Munnar Hills</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Munnar, Thekkady &amp; Alleppey</p>
           <ul class="pkg-hl"><li>Alleppey houseboat overnight</li><li>Munnar tea garden drive</li><li>Periyar wildlife boat safari</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><s>₹24,500</s><b>₹19,900</b><small>per person</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20Kerala%20Backwaters%20%26%20Munnar%20Hills%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
-      <article class="card pkg" data-category="pilgrimage">
+      <article class="card pkg" data-plan="tirupati" data-category="pilgrimage">
         <div class="pkg-img"><span class="pkg-badge">Darshan</span><span class="pkg-days">2N / 3D</span><img src="/assets/img/tours/tirupati-kanchi.webp" alt="Temple gopuram, Kanchipuram" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>Tirupati &amp; Kanchipuram Darshan</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Tirupati &amp; Kanchipuram</p>
           <ul class="pkg-hl"><li>Darshan assistance arranged</li><li>Kanchi Kamakshi &amp; Ekambareswarar</li><li>AC transport throughout</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><s>₹12,000</s><b>₹9,800</b><small>per person</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20Tirupati%20%26%20Kanchipuram%20Darshan%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
-      <article class="card pkg" data-category="honeymoon">
+      <article class="card pkg" data-plan="maldives" data-category="international">
         <div class="pkg-img"><span class="pkg-badge">Romance</span><span class="pkg-days">4N / 5D</span><img src="/assets/img/tours/maldives.webp" alt="Overwater villas in the Maldives" loading="lazy" width="640" height="448"></div>
         <div class="pkg-body"><h3>Maldives Overwater Escape</h3><p class="pkg-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Maldives</p>
           <ul class="pkg-hl"><li>Overwater or beach villa</li><li>Speedboat / seaplane transfer</li><li>Candlelight dinner arrangement</li></ul>
+          <button class="btn btn-ghost btn-sm" type="button" data-plan-open>View 4-day plan</button>
           <div class="pkg-foot"><span class="pkg-price"><b>On request</b><small>ask for a quote</small></span><a class="btn btn-yellow btn-sm" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20would%20like%20details%20on%20the%20Maldives%20Overwater%20Escape%20package." target="_blank" rel="noopener">Enquire</a></div></div>
       </article>
       <article class="card pkg" data-category="group">
@@ -229,6 +239,7 @@
   </div>
 </footer>
 <a class="fab" href="https://wa.me/919344020864?text=Hi%20Sirpy%20Air%20Travels%2C%20I%20have%20a%20question%20about%20travel%20booking." target="_blank" rel="noopener" aria-label="Chat with Sirpy Air Travels on WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 1.9 17.7L.3 23.6l6-1.6A11.8 11.8 0 0 0 23.8 12a11.7 11.7 0 0 0-3.3-8.5zM12.1 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.6.9 1-3.5-.2-.4a9.8 9.8 0 1 1 8.2 4.6zm5.4-7.3c-.3-.2-1.8-.9-2-1s-.5-.2-.7.1-.8 1-1 1.2-.4.2-.7.1a8 8 0 0 1-4-3.5c-.3-.5.3-.5.9-1.6.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.5 13.5 0 0 0 5.2 4.6c1.9.8 2.7.9 3.6.7a3.1 3.1 0 0 0 2-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.1-.3-.2-.5-.3z" fill="currentColor" stroke="none"/></svg></a>
-<script src="/assets/js/site.js?v=85fc2a7a" defer></script>
+<script src="/assets/js/site.js?v=32a3bc85" defer></script>
+<script src="/assets/js/tours.js?v=32a3bc85" defer></script>
 </body>
 </html>

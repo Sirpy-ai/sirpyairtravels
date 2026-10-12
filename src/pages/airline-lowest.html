@@ -1,0 +1,31 @@
+<!-- {"title": "Lowest Fares by Airline — Scoot, IndiGo, Air India Express, Singapore Airlines", "description": "The lowest fare each airline has offered on Singapore ⇄ Trichy, Chennai and Coimbatore flights, from our saved fare history. Filter by month and route.", "nav": "offers", "scripts": ["airline-lowest"]} -->
+<section class="page-head">
+  <div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/offers">Special Offers</a><span>/</span>Lowest by airline</nav>
+    <h1>Lowest Fares by Airline</h1>
+    <p>The lowest fare each airline has offered on our routes, from the fare data we have saved. Pick an airline, a month or a route to narrow it down.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="filters" id="alAirlines" role="group" aria-label="Airline">
+      <button class="filter" type="button" data-airline="all" aria-pressed="true">All airlines</button>
+      <button class="filter" type="button" data-airline="TR" aria-pressed="false">Scoot</button>
+      <button class="filter" type="button" data-airline="6E" aria-pressed="false">IndiGo</button>
+      <button class="filter" type="button" data-airline="IX" aria-pressed="false">Air India Express</button>
+      <button class="filter" type="button" data-airline="SQ" aria-pressed="false">Singapore Airlines</button>
+    </div>
+    <div class="toolbar-row">
+      <label>Month <select id="alMonth"><option value="">All months</option></select></label>
+      <label>Route <select id="alRoute"><option value="">All routes</option></select></label>
+    </div>
+    <p class="muted small" id="alNote" aria-live="polite"></p>
+    <div class="grid-4" id="alCards"></div>
+    <div class="table-wrap" style="margin-top:28px"><table class="al-table">
+      <thead><tr><th>Airline</th><th>Route</th><th>Flight date</th><th>Departs</th><th>Lowest fare</th><th class="hide-m">Seen</th><th></th></tr></thead>
+      <tbody id="alBody"><tr><td colspan="7" class="loading">Loading fares…</td></tr></tbody>
+    </table></div>
+    <p class="disclaimer">Fares include our service fee and baggage, and change with availability. Lowest fares may no longer be on sale: check the live price on the search page.</p>
+  </div>
+</section>

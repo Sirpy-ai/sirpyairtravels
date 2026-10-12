@@ -772,67 +772,116 @@
     x.beginPath(); x.roundRect(X, Y, w, h, r); x.fill();
   }
 
+  /* Share image (1080 x 1080). Layout: header with logo and badge, route,
+     flight card(s) with times, price with baggage last, then book-now and contacts. */
+  const PLANE_PATH = 'M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z';
+  /* Starburst badge (like a "SPECIAL OFFER" sticker). */
+  function drawStarburst(x, cx, cy, R, r, n, col) {
+    x.beginPath();
+    for (let i = 0; i < n * 2; i++) {
+      const a = (Math.PI * i) / n, rad = i % 2 ? r : R;
+      x.lineTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
+    }
+    x.closePath(); x.fillStyle = col; x.fill();
+  }
+  /* Plane picture: /assets/img/share/plane.png if you add one, otherwise a simple drawn plane. */
+  async function drawPlane(x) {
+    try {
+      const img = await loadImg('/assets/img/share/plane.png');
+      x.drawImage(img, 610, 190, 420, 150);
+    } catch {
+      x.save(); x.translate(860, 250); x.scale(4, 4); x.fillStyle = '#ffc61a';
+      x.fill(new Path2D(PLANE_PATH)); x.restore();
+    }
+  }
   async function drawFareImage(d) {
     const W = 1080, H = 1080;
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
     const x = c.getContext('2d');
-    try { await Promise.all(['400', '600', '700', '800'].map((w) => document.fonts.load(`${w} 40px Poppins`))); } catch { /* system font */ }
+    try { await Promise.all(['400', '600', '700', '800', '900'].map((w) => document.fonts.load(`${w} 40px Poppins`))); } catch { /* system font */ }
     const font = (w, s) => `${w} ${s}px Poppins, "Segoe UI", Arial, sans-serif`;
     const legs = d.legs;
     const rt = legs.length > 1;
     const city = (code) => SIRPY.AIRPORTS[code].city;
+    const Y = '#ffc61a', INK = '#111111';
 
     x.fillStyle = '#f5f5f2'; x.fillRect(0, 0, W, H);
+
     /* header */
-    x.fillStyle = '#111111'; x.fillRect(0, 0, W, 170);
-    x.fillStyle = '#ffffff'; roundRect(x, 40, 30, 330, 110, 16);
-    try { const logo = await loadImg('/assets/img/logo.png'); x.drawImage(logo, 55, 40, 300, 98); } catch { /* text only */ }
-    x.textAlign = 'right';
-    x.fillStyle = '#ffc61a'; x.font = font(800, 40); x.fillText(d.badge || 'SPECIAL FARE', W - 50, 88);
-    x.fillStyle = '#d9d9d9'; x.font = font(500, 26); x.fillText('Tamil Nadu ⇄ Singapore flights', W - 50, 128);
+    x.fillStyle = INK; x.fillRect(0, 0, W, 200);
+    x.fillStyle = '#ffffff'; roundRect(x, 40, 28, 330, 116, 18);
+    try { const logo = await loadImg('/assets/img/logo.png'); x.drawImage(logo, 56, 42, 298, 88); } catch { /* text only */ }
+    x.fillStyle = '#d9d9d9'; x.font = font(600, 20); x.fillText('TAMIL NADU ⇄ SINGAPORE FLIGHTS', 42, 178);
+    drawStarburst(x, 800, 100, 98, 72, 18, '#e0262b');
+    const words = (d.badge || 'SPECIAL OFFER').toUpperCase().split(' ');
+    x.fillStyle = Y; x.font = font(900, 30); x.textAlign = 'center';
+    x.fillText(words.slice(0, Math.ceil(words.length / 2)).join(' '), 800, 92);
+    x.fillText(words.slice(Math.ceil(words.length / 2)).join(' ') || ' ', 800, 124);
     x.textAlign = 'left';
 
-    /* route */
-    x.fillStyle = '#111111'; x.font = font(800, 60);
-    x.fillText(`${city(legs[0].from)} ${rt ? '⇄' : '→'} ${city(legs[0].to)}`, 60, 255);
-    x.fillStyle = '#ffc61a'; roundRect(x, 60, 278, rt ? 190 : 160, 46, 23);
-    x.fillStyle = '#111111'; x.font = font(700, 24); x.fillText(rt ? 'Round trip' : 'One way', 80, 309);
+    /* route + type */
+    x.fillStyle = INK; x.font = font(800, 60);
+    x.fillText(`${city(legs[0].from)} ${rt ? '⇄' : '→'} ${city(legs[0].to)}`, 60, 285);
+    x.fillStyle = Y; roundRect(x, 60, 304, rt ? 230 : 180, 48, 24);
+    x.fillStyle = INK; x.font = font(700, 26); x.textAlign = 'center';
+    x.fillText(rt ? 'ROUND TRIP' : 'ONE WAY', 60 + (rt ? 115 : 90), 336);
+    x.textAlign = 'left';
+    /* plane icon */
+    await drawPlane(x);
 
-    /* flights */
-    let y = 350;
-    legs.forEach((f, i) => {
-      x.fillStyle = '#ffffff'; roundRect(x, 60, y, 960, 150, 18);
-      x.fillStyle = '#e8ad00'; x.font = font(700, 22);
-      x.fillText(rt ? (i ? 'RETURN' : 'DEPART') : 'FLIGHT', 90, y + 40);
-      x.fillStyle = '#333333'; x.font = font(600, 28);
-      x.fillText(`${airlineName(f.airline)} · ${fmtDate(f.date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · Non-stop`, 90, y + 82);
-      x.fillStyle = '#111111'; x.font = font(800, 38);
-      x.fillText(`${fmt12(f.dep)} ${f.from}  →  ${fmt12(f.arr)} ${f.to}${f.plus ? ` (+${f.plus})` : ''}`, 90, y + 130);
-      y += 166;
-    });
+    /* flight cards */
+    const cardH = rt ? 166 : 240;
+    let y = 372;
+    for (const [i, f] of legs.entries()) {
+      x.fillStyle = '#ffffff'; roundRect(x, 60, y, 960, cardH, 22);
+      x.fillStyle = '#e8ad00'; x.font = font(800, 22); x.textAlign = 'right';
+      x.fillText(rt ? (i ? 'RETURN' : 'DEPART') : 'FLIGHT', 990, y + 40);
+      x.textAlign = 'left';
+      /* airline logo + name + date */
+      x.fillStyle = Y; x.beginPath(); x.arc(118, y + 62, 40, 0, Math.PI * 2); x.fill();
+      try { const al = await loadImg(`/assets/img/airlines/${f.airline}.png`); x.drawImage(al, 88, y + 32, 60, 60); } catch { /* no logo */ }
+      x.fillStyle = INK; x.font = font(800, 32); x.fillText(airlineName(f.airline), 180, y + 58);
+      x.fillStyle = '#555555'; x.font = font(500, 24);
+      x.fillText(`${fmtDate(f.date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · Non-stop`, 180, y + 96);
+      /* times, then cities */
+      x.fillStyle = INK; x.font = font(800, rt ? 36 : 40);
+      x.fillText(`${fmt12(f.dep)} ${f.from}  →  ${fmt12(f.arr)} ${f.to}${f.plus ? ` (+${f.plus})` : ''}`, 90, y + cardH - (rt ? 40 : 52));
+      x.fillStyle = '#666666'; x.font = font(500, 22);
+      x.fillText(`${city(f.from)}`, 90, y + cardH - (rt ? 14 : 16));
+      x.textAlign = 'right'; x.fillText(`${city(f.to)}`, 990, y + cardH - (rt ? 14 : 16)); x.textAlign = 'left';
+      y += cardH + 14;
+    }
 
-    /* price */
+    /* price block, baggage last */
     const p = d.p;
-    x.fillStyle = '#ffc61a'; roundRect(x, 60, y + 4, 960, 200, 22);
-    x.fillStyle = '#111111'; x.font = font(800, 104);
-    x.fillText(money.sgd(p.sgd), 95, y + 128);
-    x.font = font(600, 26);
-    x.fillText(`${d.per || 'per adult'} · ${[...new Set(p.legs.map((l) => bagLabel(l.bag)))].join(' · ')}`, 97, y + 176);
-    x.textAlign = 'right'; x.font = font(700, 40);
-    x.fillText(money.inr(p.inr), 985, y + 92);
-    if (p.noBagSgd !== p.sgd) { x.font = font(500, 24); x.fillText(`${money.sgd(p.noBagSgd)} without baggage`, 985, y + 132); }
+    const py = y + 6, ph = rt ? 186 : 220;
+    x.fillStyle = Y; roundRect(x, 60, py, 960, ph, 24);
+    x.fillStyle = INK; x.font = font(900, 112);
+    x.fillText(money.sgd(p.sgd), 90, py + 118);
+    x.font = font(600, 24);
+    x.fillText(`${d.per || 'per adult'}${rt ? ' return' : ''} · ${[...new Set(p.legs.map((l) => bagLabel(l.bag)))].join(' · ')}`, 92, py + 162);
+    x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(705, py + 28, 2, ph - 56);
+    x.textAlign = 'right';
+    x.fillStyle = INK; x.font = font(800, 42); x.fillText(money.inr(p.inr), 985, py + 84);
+    x.font = font(500, 20); x.fillText('(approx.)', 985, py + 110);
+    if (p.noBagSgd !== p.sgd) { x.font = font(600, 24); x.fillText(`${money.sgd(p.noBagSgd)} without baggage`, 985, py + 150); }
     x.textAlign = 'left';
 
-    /* footer */
-    x.fillStyle = '#111111'; x.fillRect(0, H - 150, W, 150);
-    x.fillStyle = '#ffc61a'; x.font = font(700, 36);
-    x.fillText('Book: sirpyairtravels.com', 60, H - 88);
-    x.fillStyle = '#ffffff'; x.font = font(500, 28);
-    x.fillText('WhatsApp +91 93440 20864  ·  SG +65 8260 2446', 60, H - 42);
-    x.textAlign = 'right'; x.fillStyle = '#9a9a9a'; x.font = font(400, 20);
-    x.fillText(`Fare as of ${d.updated ? fmtDate(d.updated, { day: 'numeric', month: 'short' }) : 'today'} · subject to availability`, W - 40, H - 92);
+    /* book now + contacts */
+    const fy = H - 150;
+    x.fillStyle = INK; x.fillRect(0, fy, W, 150);
+    x.fillStyle = 'rgba(0,0,0,.55)'; roundRect(x, 66, fy + 40, 300, 84, 22);
+    const bg = x.createLinearGradient(0, fy + 30, 0, fy + 114);
+    bg.addColorStop(0, '#ff4b4b'); bg.addColorStop(1, '#c4161c');
+    x.fillStyle = bg; roundRect(x, 60, fy + 30, 300, 84, 22);
+    x.fillStyle = '#ffffff'; x.font = font(900, 34); x.textAlign = 'center';
+    x.fillText('BOOK NOW', 210, fy + 84);
     x.textAlign = 'left';
+    x.fillStyle = Y; x.font = font(700, 32); x.fillText('sirpyairtravels.com', 460, fy + 62);
+    x.fillStyle = '#ffffff'; x.font = font(500, 24); x.fillText('WhatsApp +91 93440 20864  ·  +65 8260 2446', 460, fy + 100);
+    x.fillStyle = '#9a9a9a'; x.font = font(400, 18);
+    x.fillText(`Fare as of ${d.updated ? fmtDate(d.updated, { day: 'numeric', month: 'short' }) : 'today'} · subject to availability`, 460, fy + 130);
     return new Promise((res) => c.toBlob(res, 'image/png'));
   }
 
@@ -1120,6 +1169,55 @@
     if (!quiet && due) setTimeout(() => { if (!document.body.classList.contains('modal-open')) openSignin(); }, 6000);
   })();
 
+  /* ---------- Sliding cards (home blogs, latest posts): arrows, swipe, auto-slide ---------- */
+  $$('[data-cards]').forEach((box) => {
+    const track = $('.slider-track', box);
+    const step = () => { const c = track.firstElementChild; return c ? c.getBoundingClientRect().width + 16 : 300; };
+    const next = () => {
+      const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+      track.scrollTo({ left: atEnd ? 0 : track.scrollLeft + step(), behavior: 'smooth' });
+    };
+    const prev = () => {
+      const atStart = track.scrollLeft <= 4;
+      track.scrollTo({ left: atStart ? track.scrollWidth : track.scrollLeft - step(), behavior: 'smooth' });
+    };
+    $('[data-next]', box).addEventListener('click', next);
+    $('[data-prev]', box).addEventListener('click', prev);
+    let timer = null;
+    const start = () => { stop(); timer = setInterval(() => { if (!document.hidden) next(); }, 5000); };
+    const stop = () => { if (timer) clearInterval(timer); timer = null; };
+    box.addEventListener('mouseenter', stop);
+    box.addEventListener('mouseleave', start);
+    box.addEventListener('focusin', stop);
+    box.addEventListener('focusout', start);
+    /* Only auto-slide when the row is actually scrolling (phones/tablets or many cards). */
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) start();
+  });
+
+  /* ---------- Offline desk offer box (once per visit) ---------- */
+  (function offlineDesk() {
+    if (/^\/(admin|book)/.test(location.pathname)) return;
+    const KEY = 'sirpy_offline_seen';
+    try { if (sessionStorage.getItem(KEY)) return; } catch { /* private mode: show it */ }
+    const box = document.createElement('aside');
+    box.className = 'desk-box';
+    box.setAttribute('aria-label', 'Special offer at our offline desk');
+    box.innerHTML = `
+      <button class="desk-x" type="button" aria-label="Close offer">&times;</button>
+      <p class="desk-eyebrow">Special offer</p>
+      <p class="desk-title">Special offers are available at our offline desk</p>
+      <p class="desk-sub">Visit Trichy or Singapore, or tap below and we will send you today's best fare on WhatsApp.</p>
+      <a class="btn btn-wa btn-sm" href="${wa('Hi Sirpy Air Travels, I would like to avail the special offer from your offline desk.')}" target="_blank" rel="noopener">${WA_SVG}Avail on WhatsApp</a>`;
+    document.body.appendChild(box);
+    const close = () => {
+      box.remove();
+      try { sessionStorage.setItem(KEY, '1'); } catch { /* ignore */ }
+    };
+    $('.desk-x', box).addEventListener('click', close);
+    $('.desk-box a', box).addEventListener('click', close);
+    setTimeout(() => { if (!document.body.classList.contains('modal-open')) box.classList.add('show'); }, 2500);
+  })();
+
   /* ---------- Blog: /blog list and /post?slug= page ---------- */
   const POST_CATS = { offer: 'Special Offer', weekly: 'Weekly Fares', tips: 'Travel Tip', news: 'News' };
   const postFields = 'slug,title,category,excerpt,cover_url,published_at';
@@ -1192,6 +1290,6 @@
   window.SirpySite = {
     SIRPY, $, $$, esc, store, wa, ymd, parseYmd, addDays, daysBetween, today, fmtDate, fmt12, fmtDur, nf,
     logoImg, logoUrl, airlineName, getRate, money, loadFares, inRoute, reverseKey, cheapest,
-    roundTrips, priceHtml, sumPrices, baggageFor, bagLabel, comboHtml, shareBtn, sb
+    roundTrips, priceHtml, sumPrices, baggageFor, bagLabel, comboHtml, shareBtn, sb, priceOf
   };
 })();
