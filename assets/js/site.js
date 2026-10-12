@@ -813,11 +813,9 @@
     x.fillStyle = '#ffffff'; roundRect(x, 40, 28, 330, 116, 18);
     try { const logo = await loadImg('/assets/img/logo.png'); x.drawImage(logo, 56, 42, 298, 88); } catch { /* text only */ }
     x.fillStyle = '#d9d9d9'; x.font = font(600, 20); x.fillText('TAMIL NADU ⇄ SINGAPORE FLIGHTS', 42, 178);
-    drawStarburst(x, 800, 100, 98, 72, 18, '#e0262b');
-    const words = (d.badge || 'SPECIAL OFFER').toUpperCase().split(' ');
-    x.fillStyle = Y; x.font = font(900, 30); x.textAlign = 'center';
-    x.fillText(words.slice(0, Math.ceil(words.length / 2)).join(' '), 800, 92);
-    x.fillText(words.slice(Math.ceil(words.length / 2)).join(' ') || ' ', 800, 124);
+    x.fillStyle = Y; roundRect(x, 640, 58, 380, 84, 42);
+    x.fillStyle = INK; x.font = font(800, 32); x.textAlign = 'center';
+    x.fillText((d.badge || 'SPECIAL OFFER').toUpperCase(), 830, 110);
     x.textAlign = 'left';
 
     /* route + type */
@@ -839,7 +837,6 @@
       x.fillText(rt ? (i ? 'RETURN' : 'DEPART') : 'FLIGHT', 990, y + 40);
       x.textAlign = 'left';
       /* airline logo + name + date */
-      x.fillStyle = Y; x.beginPath(); x.arc(118, y + 62, 40, 0, Math.PI * 2); x.fill();
       try { const al = await loadImg(`/assets/img/airlines/${f.airline}.png`); x.drawImage(al, 88, y + 32, 60, 60); } catch { /* no logo */ }
       x.fillStyle = INK; x.font = font(800, 32); x.fillText(airlineName(f.airline), 180, y + 58);
       x.fillStyle = '#555555'; x.font = font(500, 24);
