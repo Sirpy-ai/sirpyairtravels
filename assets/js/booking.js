@@ -362,6 +362,7 @@
           <div class="pf-body" hidden>
             <label class="pf-drop">Choose passport photo <input type="file" accept="image/*" capture="environment" data-pf-file hidden></label>
             <p class="pf-note">Read on this computer. The photo is not uploaded or saved. Values appear faintly in the boxes: type over them, or press <b>Fill auto</b>.</p>
+            <label class="pf-toggle"><input type="checkbox" data-pf-trace-toggle checked> Show trace (faint guide that follows your typing)</label>
             <div class="pf-status" aria-live="polite"></div>
             <dl class="pf-read" hidden></dl>
             <div class="pf-actions">

@@ -135,14 +135,48 @@
   function ensureOption(sel, v) {
     if (![...sel.options].some((o) => o.value === v)) sel.add(new Option(v, v));
   }
+  /* Trace: the read value sits faintly behind the box. Typing matches it letter by letter,
+     so the rest of the value stays visible as a guide. Can be switched off. */
+  function traceWrap(el) {
+    if (el.parentElement.classList.contains('pf-wrap')) return el.parentElement;
+    const w = document.createElement('span');
+    w.className = 'pf-wrap';
+    el.before(w);
+    const tr = document.createElement('span');
+    tr.className = 'pf-trace';
+    tr.setAttribute('aria-hidden', 'true');
+    w.append(tr, el);
+    el.classList.add('pf-input');
+    const cs = getComputedStyle(el);
+    tr.style.font = cs.font;
+    tr.style.padding = cs.padding;
+    tr.style.lineHeight = cs.lineHeight;
+    tr.style.letterSpacing = cs.letterSpacing;
+    return w;
+  }
+  function updateTrace(el) {
+    const w = traceWrap(el);
+    const tr = w.querySelector('.pf-trace');
+    const sug = el.dataset.trace || '';
+    const typed = el.value || '';
+    if (!sug || !sug.toUpperCase().startsWith(typed.toUpperCase())) { tr.textContent = ''; return; }
+    tr.innerHTML = `<span class="pf-typed">${escapeHtml(typed)}</span>${escapeHtml(sug.slice(typed.length))}`;
+  }
   function watermark(b, read) {
     ['first', 'last', 'passport'].forEach((n) => {
       const el = field(b, n);
       if (!el) return;
-      if (el.dataset.orig === undefined) el.dataset.orig = el.placeholder;
-      el.placeholder = el.value ? el.dataset.orig : (read[n] || el.dataset.orig);
-      el.classList.toggle('pf-ghost', !el.value && !!read[n]);
+      el.dataset.trace = read[n] || '';
+      updateTrace(el);
     });
+  }
+  /* Adults: Mr / Ms (female). Children and infants: Mstr / Miss. Sets the title from the passport sex. */
+  function setTitleFromGender(b, gender) {
+    const t = field(b, 'title');
+    if (!t || !gender) return;
+    const child = b.dataset.type !== 'Adult';
+    const want = gender === 'Male' ? (child ? 'Mstr' : 'Mr') : (child ? 'Miss' : 'Ms');
+    if ([...t.options].some((o) => o.value === want) && t.value !== want) setValue(t, want);
   }
   function summary(b, read, shown) {
     const box = b.querySelector('.pf-read');
@@ -181,6 +215,7 @@
       st.read = read;
       st.confirmed = null;
       watermark(b, read);
+      setTitleFromGender(b, read.gender);
       summary(b, read, mode === 'recheck');
       const missing = ['first', 'last', 'passport', 'dob', 'expiry'].filter((k) => !read[k]);
       const bad = Object.entries(read.checks).filter(([, ok]) => !ok).map(([k]) => LABELS[k].toLowerCase());
@@ -234,6 +269,7 @@
       if (nat && r.nationality) { ensureOption(nat, r.nationality); if (!nat.dataset.touched) setValue(nat, r.nationality); }
       const g = field(b, 'gender');
       if (g && r.gender && g.value !== r.gender) { ensureOption(g, r.gender); setValue(g, r.gender); }
+      setTitleFromGender(b, r.gender);
       watermark(b, r);
       setStatus(b, filled ? `Filled ${filled} field(s). Check them, then press Confirm.` : 'Nothing to fill: the fields already have values. Use Recheck to compare.');
       return;
@@ -259,9 +295,25 @@
     }
   });
 
-  /* Typing over a watermark clears its highlight. */
+  /* Typing updates the trace. */
   document.addEventListener('input', (e) => {
-    if (e.target.classList && e.target.classList.contains('pf-ghost') && e.target.value) e.target.classList.remove('pf-ghost');
-    if (e.target.matches && e.target.matches('select[name=nationality]')) e.target.dataset.touched = '1';
+    const el = e.target;
+    if (el.classList && el.classList.contains('pf-input') && el.dataset.trace !== undefined) updateTrace(el);
+    if (el.matches && el.matches('select[name=nationality]')) el.dataset.touched = '1';
+  });
+
+  /* Trace on/off, remembered on this computer. */
+  const TRACE_KEY = 'pf_trace';
+  function applyTraceSetting(on) {
+    document.body.classList.toggle('pf-trace-off', !on);
+    document.querySelectorAll("[data-pf-trace-toggle]").forEach((c) => { c.checked = on; });
+  }
+  let traceOn = true;
+  try { traceOn = localStorage.getItem(TRACE_KEY) !== 'off'; } catch { /* private mode */ }
+  applyTraceSetting(traceOn);
+  document.addEventListener('change', (e) => {
+    if (!e.target.matches || !e.target.matches('[data-pf-trace-toggle]')) return;
+    applyTraceSetting(e.target.checked);
+    try { localStorage.setItem(TRACE_KEY, e.target.checked ? 'on' : 'off'); } catch { /* ignore */ }
   });
 })();

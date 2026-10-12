@@ -989,3 +989,12 @@ input.pf-ok, select.pf-ok { border-color: var(--ok); }
 [data-prev] svg { transform: rotate(180deg); }
 @media (max-width: 1080px) { .slider-track > * { flex-basis: calc((100% - 16px) / 2.2); } }
 @media (max-width: 620px) { .slider-track > * { flex-basis: 78%; } }
+
+/* ---------- Passport Fetcher trace: the read value stays visible behind typing ---------- */
+.pf-wrap { position: relative; display: block; background: #fff; border-radius: 8px; }
+.pf-trace { position: absolute; inset: 0; display: block; color: #9a8a4a; opacity: .75; white-space: pre; overflow: hidden; pointer-events: none; border: 1.5px solid transparent; box-sizing: border-box; font-style: italic; }
+.pf-typed { color: transparent; }
+.pf-input { position: relative; z-index: 1; background: transparent !important; }
+.pf-trace-off .pf-trace { display: none; }
+.pf-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.pf-toggle input { width: auto; }
