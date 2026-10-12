@@ -69,12 +69,23 @@
 
   /* ---------- MRZ (ICAO 9303, TD3 passports: two lines of 44 characters) ---------- */
   function mrzLines(text) {
-    const cands = String(text || '').split(/\r?\n/)
-      .map((l) => l.toUpperCase().replace(/[^A-Z0-9<]/g, ''))
-      .filter((l) => l.length >= 30 && l.includes('<'));
-    if (cands.length < 2) return null;
+    const src = String(text || '').split(/\r?\n/).map((l) => l.toUpperCase());
+    const clean = src.map((l) => l.replace(/[^A-Z0-9<]/g, ''));
+    /* Spaces are kept as '<' for the name line, since OCR often reads the filler as a space. */
+    const loose = src.map((l) => l.replace(/\s+/g, '<').replace(/[^A-Z0-9<]/g, ''));
     const pad = (l) => (l + '<'.repeat(44)).slice(0, 44);
+    /* Line 2 has passport number, nationality, date of birth and sex in fixed places; line 1 is just above it. */
+    const l2 = clean.findIndex((l) => l.length >= 30 && /^[A-Z0-9<]{9}[0-9<][A-Z<]{3}[0-9OIZSB]{6}/.test(l));
+    if (l2 > 0) return [pad(loose[l2 - 1]), pad(clean[l2])];
+    const cands = clean.filter((l) => l.length >= 30 && l.includes('<'));
+    if (cands.length < 2) return null;
     return cands.slice(-2).map(pad);
+  }
+
+  /* OCR often reads the '<' filler as K or L, so those runs also separate the name parts. */
+  function nameTokens(raw) {
+    const s = raw.replace(/\bK\b/g, '<').replace(/K{2,}/g, '<').replace(/L{3,}/g, '<');
+    return s.split('<').map((t) => t.trim()).filter(Boolean);
   }
   const digitsOnly = (s) => s.replace(/[A-Z]/g, (c) => FIX[c] || c);
   const cval = (ch) => (ch === '<' ? 0 : /\d/.test(ch) ? +ch : ch.charCodeAt(0) - 55);
@@ -83,9 +94,9 @@
 
   function parseMrz([l1, l2]) {
     const out = { checks: {} };
-    const names = l1.slice(5).split('<<');
-    out.last = names[0].replace(/</g, ' ').replace(/\s+/g, ' ').trim();
-    out.first = (names[1] || '').replace(/</g, ' ').replace(/\s+/g, ' ').trim();
+    const tokens = nameTokens(l1.slice(5));
+    out.last = tokens[0] || '';
+    out.first = tokens.slice(1).join(' ');
 
     const pno = l2.slice(0, 9);
     out.passport = pno.replace(/</g, '');
@@ -240,6 +251,15 @@
     const b = block(input);
     b._pf = { file: input.files[0] };
     b.querySelector('.pf-body').hidden = false;
+    let prev = b.querySelector('.pf-preview');
+    if (!prev) {
+      prev = document.createElement('img');
+      prev.className = 'pf-preview';
+      prev.alt = 'Passport photo preview';
+      b.querySelector('.pf-drop').after(prev);
+    }
+    if (prev.src) URL.revokeObjectURL(prev.src);
+    prev.src = URL.createObjectURL(input.files[0]);
     run(b, input.files[0], 'read');
     input.value = '';
   });

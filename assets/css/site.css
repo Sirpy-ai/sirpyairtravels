@@ -998,3 +998,4 @@ input.pf-ok, select.pf-ok { border-color: var(--ok); }
 .pf-trace-off .pf-trace { display: none; }
 .pf-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
 .pf-toggle input { width: auto; }
+.pf-preview { display: block; max-width: 100%; max-height: 220px; width: auto; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
