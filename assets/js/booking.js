@@ -477,7 +477,36 @@
           <dt>Contact</dt><dd>${esc(booking.contact.name)} · ${esc(booking.contact.phone)} · ${esc(booking.contact.email)}</dd>
           ${booking.contact.notes ? `<dt>Notes</dt><dd>${esc(booking.contact.notes)}</dd>` : ''}
         </dl>
-        <div class="table-scroll"><table><thead><tr><th>#</th><th>Type</th><th>Name</th><th>DOB</th><th>Nationality</th><th>Passport</th></tr></thead><tbody>${tr}</tbody></table></div>`;
+        <div class="table-scroll"><table><thead><tr><th>#</th><th>Type</th><th>Name</th><th>DOB</th><th>Nationality</th><th>Passport</th></tr></thead><tbody>${tr}</tbody></table></div>
+        <div class="actions" style="margin-top:14px"><button class="btn btn-ghost" type="button" id="shareSummaryBtn">Share fare image</button></div>`;
+      $('#shareSummaryBtn').addEventListener('click', () => {
+        const rows = legs.map((f, i) => {
+          const bag = f.p.bag || {};
+          const kg = bag.kg || 0;
+          const bagInr = (bag.inr || 0) * seats;
+          return {
+            title: `${airlineName(f.airline)} · ${f.from} → ${f.to}`,
+            sub: `${back ? (i ? 'Return' : 'Depart') : 'Flight'} · ${fmtDate(f.date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · ${fmt12(f.dep)} → ${fmt12(f.arr)}${f.plus ? ` (+${f.plus})` : ''}`,
+            qty: `× ${seats}`,
+            fareTxt: money.sgd(f.p.noBagSgd * seats),
+            bagLabel: kg ? `Baggage ${kg} kg` : 'Baggage',
+            bagTxt: bag.included ? 'included' : (bagInr ? `${money.inr(bagInr)} · ${money.sgd(f.p.bagSgd * seats)}` : 'included')
+          };
+        });
+        window.SirpySite_shareSummary({
+          title: `${city(out.from)} → ${city(back ? back.from : out.to)}${back ? ` → ${city(back.to)}` : ''}`,
+          subtitle: `${seats} ${seats > 1 ? 'travellers' : 'traveller'} · ${back ? 'Round trip' : 'One way'} · fare breakdown`,
+          rows,
+          totalSgd: money.sgd(total.sgd),
+          totalInr: money.inr(total.inr),
+          noBagTxt: `Without baggage: ${money.sgd(total.noBagSgd)}`,
+          footNote: 'Fares saved',
+          legs,
+          p: p,
+          per: back ? 'return, per adult' : 'per adult',
+          badge: 'FARE SUMMARY'
+        });
+      });
       $('#stepDetails').hidden = true;
       $('#stepReview').hidden = false;
       setStep(2);

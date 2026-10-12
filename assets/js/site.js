@@ -882,8 +882,70 @@
     return new Promise((res) => c.toBlob(res, 'image/png'));
   }
 
+  /* Fare breakdown image (booking summary): fare and baggage for each flight, then the total. */
+  async function drawBreakdownImage(d) {
+    const W = 1080, H = 1080;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    try { await Promise.all(['400', '600', '700', '800', '900'].map((w) => document.fonts.load(`${w} 40px Poppins`))); } catch { /* system font */ }
+    const font = (w, s) => `${w} ${s}px Poppins, "Segoe UI", Arial, sans-serif`;
+    const Y = '#ffc61a', INK = '#111111';
+    x.fillStyle = '#f5f5f2'; x.fillRect(0, 0, W, H);
+
+    x.fillStyle = INK; x.fillRect(0, 0, W, 200);
+    x.fillStyle = '#ffffff'; roundRect(x, 40, 28, 330, 116, 18);
+    try { const logo = await loadImg('/assets/img/logo.png'); x.drawImage(logo, 56, 42, 298, 88); } catch { /* text only */ }
+    x.fillStyle = '#d9d9d9'; x.font = font(600, 20); x.fillText('TAMIL NADU ⇄ SINGAPORE FLIGHTS', 42, 178);
+    x.fillStyle = Y; roundRect(x, 640, 58, 380, 84, 42);
+    x.fillStyle = INK; x.font = font(800, 30); x.textAlign = 'center';
+    x.fillText('FARE SUMMARY', 830, 110);
+    x.textAlign = 'left';
+
+    x.fillStyle = INK; x.font = font(800, 50); x.fillText(d.title, 60, 286);
+    x.fillStyle = '#555555'; x.font = font(500, 24); x.fillText(d.subtitle, 60, 326);
+
+    let y = 352;
+    for (const r of d.rows) {
+      x.fillStyle = '#ffffff'; roundRect(x, 60, y, 960, 178, 22);
+      x.fillStyle = INK; x.font = font(800, 32); x.fillText(r.title, 90, y + 52);
+      x.fillStyle = '#666666'; x.font = font(500, 22); x.fillText(r.sub, 90, y + 86);
+      x.fillStyle = '#333333'; x.font = font(600, 26); x.fillText(`Fare ${r.qty}`, 90, y + 128);
+      x.fillText(r.bagLabel, 90, y + 160);
+      x.textAlign = 'right';
+      x.fillStyle = INK; x.font = font(800, 30); x.fillText(r.fareTxt, 990, y + 128);
+      x.font = font(700, 26); x.fillText(r.bagTxt, 990, y + 160);
+      x.textAlign = 'left';
+      y += 178 + 14;
+    }
+
+    const ty = y + 8;
+    x.fillStyle = Y; roundRect(x, 60, ty, 960, 170, 24);
+    x.fillStyle = INK; x.font = font(700, 30); x.fillText('Total', 90, ty + 52);
+    x.font = font(900, 96); x.fillText(d.totalSgd, 90, ty + 140);
+    x.textAlign = 'right';
+    x.font = font(800, 40); x.fillText(d.totalInr, 985, ty + 60);
+    x.font = font(600, 24); x.fillText(d.noBagTxt, 985, ty + 130);
+    x.textAlign = 'left';
+
+    const fy = H - 150;
+    x.fillStyle = INK; x.fillRect(0, fy, W, 150);
+    x.fillStyle = 'rgba(0,0,0,.55)'; roundRect(x, 66, fy + 40, 300, 84, 22);
+    const bg = x.createLinearGradient(0, fy + 30, 0, fy + 114);
+    bg.addColorStop(0, '#ff4b4b'); bg.addColorStop(1, '#c4161c');
+    x.fillStyle = bg; roundRect(x, 60, fy + 30, 300, 84, 22);
+    x.fillStyle = '#ffffff'; x.font = font(900, 34); x.textAlign = 'center';
+    x.fillText('BOOK NOW', 210, fy + 84);
+    x.textAlign = 'left';
+    x.fillStyle = Y; x.font = font(700, 32); x.fillText('sirpyairtravels.com', 460, fy + 62);
+    x.fillStyle = '#ffffff'; x.font = font(500, 24); x.fillText('WhatsApp +91 93440 20864  ·  +65 8260 2446', 460, fy + 100);
+    x.fillStyle = '#9a9a9a'; x.font = font(400, 18);
+    x.fillText(`${d.footNote} · ${d.updated ? fmtDate(d.updated, { day: 'numeric', month: 'short' }) : 'today'} · subject to availability`, 460, fy + 130);
+    return new Promise((res) => c.toBlob(res, 'image/png'));
+  }
+
   let shareModal;
-  function openShare(d) {
+  function openShare(d, render = drawFareImage) {
     if (!shareModal) {
       shareModal = document.createElement('div');
       shareModal.className = 'share-modal';
@@ -916,7 +978,7 @@
     $('.share-close', shareModal).focus();
 
     let blob = null;
-    const ready = drawFareImage(d).then((b) => {
+    const ready = render(d).then((b) => {
       blob = b;
       imgBox.innerHTML = `<img src="${URL.createObjectURL(b)}" alt="Fare image preview">`;
       return b;
@@ -1284,6 +1346,8 @@
   }
   initPost();
 
+  /* Booking summary share: d has title, subtitle, rows, totalSgd, totalInr, noBagTxt, footNote. */
+  window.SirpySite_shareSummary = (d) => loadFares().then(({ updated }) => openShare({ ...d, updated }, drawBreakdownImage));
   window.SirpySite = {
     SIRPY, $, $$, esc, store, wa, ymd, parseYmd, addDays, daysBetween, today, fmtDate, fmt12, fmtDur, nf,
     logoImg, logoUrl, airlineName, getRate, money, loadFares, inRoute, reverseKey, cheapest,
