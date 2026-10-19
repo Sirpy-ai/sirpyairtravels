@@ -11,3 +11,4 @@ Ref resources/
 # Scraper output (CI writes these, then fares.json is built from them)
 scraper/*.csv
 scraper/*.jsonl
+scraper/*.bak
