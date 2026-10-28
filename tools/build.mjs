@@ -87,9 +87,10 @@ export const icon = (name, cls = '') =>
 /* ---------- Navigation ---------- */
 const NAV = [
   ['home', '/', 'Home'],
-  ['flights', '/flights', 'Flights'],
+  ['blog', '/blog', 'Blogs'],
   ['offers', '/offers', 'Special Offers'],
   ['diwali', '/diwali-fares', 'Diwali Fares'],
+  ['study', '/study-in-singapore', 'Study in Singapore', 'hl'],
   ['tours', '/tours', 'Tour Packages'],
   ['pnr', '/#pnr', 'Check PNR'],
   ['tips', '/travel-tips', 'Travel Tips'],
@@ -133,9 +134,9 @@ const SCHEMA = `<script type="application/ld+json">
 `;
 
 function header(active) {
-  const links = NAV.map(([k, href, label]) =>
-    `<li><a href="${href}"${k === active ? ' aria-current="page"' : ''}>${label}</a></li>`).join('');
-  const drawerLinks = NAV.map(([, href, label]) => `<a class="dl" href="${href}">${label}</a>`).join('');
+  const links = NAV.map(([k, href, label, hl]) =>
+    `<li><a href="${href}"${hl ? ' class="nav-hl"' : ''}${k === active ? ' aria-current="page"' : ''}>${label}</a></li>`).join('');
+  const drawerLinks = NAV.map(([, href, label, hl]) => `<a class="dl${hl ? ' dl-hl' : ''}" href="${href}">${label}</a>`).join('');
   return `<body>
 <a class="skip" href="#main">Skip to content</a>
 <div class="topbar">

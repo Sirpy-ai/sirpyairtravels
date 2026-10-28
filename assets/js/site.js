@@ -1057,7 +1057,7 @@
   /* ---------- Visitor sign-in (email or WhatsApp) / guest mode ----------
      No password: the visitor's email or WhatsApp number is saved to the
      subscribers list (admin → Subscribers) and remembered in this browser
-     to fill the booking form. Guests just browse; asked again after 3 days. */
+     to fill the booking form. Guests just browse; never asked again. */
   const VISITOR_KEY = 'sirpy_visitor';
   const getVisitor = () => { try { return JSON.parse(localStorage.getItem(VISITOR_KEY)); } catch { return null; } };
   const setVisitor = (v) => { try { v ? localStorage.setItem(VISITOR_KEY, JSON.stringify(v)) : localStorage.removeItem(VISITOR_KEY); } catch { /* private mode */ } };
@@ -1224,7 +1224,9 @@
   (function autoAsk() {
     const v = getVisitor();
     const quiet = /^\/(admin|book)/.test(location.pathname);
-    const due = !v || (v.mode === 'guest' && Date.now() - (v.at || 0) > 3 * 864e5);
+    let shown = false; try { shown = !!sessionStorage.getItem('sirpy_asked'); } catch { /* ignore */ }
+    const due = !v && !shown; // asked once: closing or guest never re-opens it
+    try { if (due) sessionStorage.setItem('sirpy_asked', '1'); } catch { /* ignore */ }
     if (!quiet && due) setTimeout(() => { if (!document.body.classList.contains('modal-open')) openSignin(); }, 6000);
   })();
 
@@ -1286,24 +1288,55 @@
       <div class="body"><h3>${esc(p.title)}</h3>${p.excerpt ? `<p>${esc(p.excerpt)}</p>` : ''}<span class="more">${esc(postDate(p))} · Read more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
     </a>`;
 
+  /* The Blogs page is a news feed: our live fare pages first, then posts written in the admin portal. */
+  const FEED_PAGES = [
+    { cat: 'weekly', tag: 'Live', title: 'Fare Comparison: top fare changes', text: 'Biggest fare drops and rises since the last update, by airport.', href: '/fare-comparison', img: '/assets/img/site/blog-weekly.webp', live: true },
+    { cat: 'weekly', tag: 'This week', title: 'Special Fares This Week', text: 'The cheapest seat on every sector for the next 7 days.', href: '/weekly-fares', img: '/assets/img/site/blog-weekly.webp', live: true },
+    { cat: 'offer', tag: 'Top 10', title: 'Top 10 Lowest Fares', text: 'The ten lowest fares across all Tamil Nadu to Singapore dates.', href: '/top-fares', img: '/assets/img/site/blog-top10.webp', live: true },
+    { cat: 'offer', tag: 'Airlines', title: 'Lowest Fares by Airline', text: 'Scoot, IndiGo, Air India Express and Singapore Airlines. Filter by month and route.', href: '/airline-lowest', img: '/assets/img/offers/scoot-sin-trz.webp', live: true },
+    { cat: 'offer', tag: 'Diwali 2026', title: 'Diwali Fares: out 7 Nov, back 10 to 13 Nov', text: 'Every flight combination ranked lowest to highest, baggage included.', href: '/diwali-fares', img: '/assets/img/tours/temple-trail.webp', live: true },
+    { cat: 'offer', tag: 'Offers', title: 'Airline Special Offers', text: 'Promotions from Scoot, IndiGo, Air India Express and Singapore Airlines.', href: '/offers', img: '/assets/img/offers/indigo-sin-trz.webp' },
+    { cat: 'news', tag: 'Study', title: 'Study in Singapore', text: 'Universities and colleges, student pass help, accommodation and flights.', href: '/study-in-singapore', img: '/assets/img/tours/singapore-malaysia.webp' },
+    { cat: 'tips', tag: 'Guide', title: 'Travel Tips for Tamil Nadu and Singapore', text: 'SG Arrival Card, baggage, documents and airport timings.', href: '/travel-tips', img: '/assets/img/site/blog-tips.webp' }
+  ];
+  const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+  const feedItem = (it) => `<a class="feed-item" href="${esc(it.href)}">
+      <div class="feed-img">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy">` : ''}</div>
+      <div class="feed-body">
+        <div class="feed-meta"><span class="feed-tag">${esc(it.tag)}</span>${it.date ? `<span class="feed-date">${esc(it.date)}</span>` : ''}</div>
+        <h3>${esc(it.title)}</h3>
+        ${it.text ? `<p>${esc(it.text)}</p>` : ''}
+        <span class="more">Read more ${ARROW}</span>
+      </div></a>`;
+
   async function initBlogList() {
     const grid = $('#postGrid');
     if (!grid) return;
     const tabs = $$('[data-cat]');
-    let posts = [];
+    let items = [];
     const render = (cat) => {
       tabs.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.cat === cat)));
-      const list = cat === 'all' ? posts : posts.filter((p) => p.category === cat);
-      grid.innerHTML = list.length ? list.map(postCard).join('')
-        : '<p class="empty-note">No posts here yet — check our <a href="/offers">Special Offers</a> and <a href="/travel-tips">Travel Tips</a>.</p>';
+      const list = cat === 'all' ? items : items.filter((it) => it.cat === cat);
+      grid.innerHTML = list.length ? list.map(feedItem).join('')
+        : '<p class="empty-note">Nothing here yet. See our <a href="/offers">Special Offers</a> and <a href="/travel-tips">Travel Tips</a>.</p>';
     };
     tabs.forEach((t) => t.addEventListener('click', () => render(t.dataset.cat)));
+
+    let updated = null;
+    try { updated = (await loadFares()).updated; } catch { /* no date label */ }
+    const stamp = updated ? `Updated ${fmtDate(updated, { day: 'numeric', month: 'short' })}` : 'Updated daily';
+    items = FEED_PAGES.map((f) => ({ ...f, date: f.live ? stamp : '' }));
+    render('all');
+
     try {
-      posts = await sb.select('posts', `select=${postFields}&status=eq.published&order=published_at.desc&limit=60`);
-      render('all');
-    } catch {
-      grid.innerHTML = '<p class="empty-note">Posts could not load. Please refresh the page.</p>';
-    }
+      const posts = await sb.select('posts', `select=${postFields}&status=eq.published&order=published_at.desc&limit=60`);
+      items = items.concat(posts.map((p) => ({
+        cat: p.category, tag: POST_CATS[p.category] || 'News', title: p.title, text: p.excerpt || '',
+        href: `/post?slug=${encodeURIComponent(p.slug)}`, img: p.cover_url || '', date: postDate(p)
+      })));
+      const active = tabs.find((t) => t.getAttribute('aria-pressed') === 'true');
+      render(active ? active.dataset.cat : 'all');
+    } catch { /* the live pages stay; posts could not load */ }
   }
   initBlogList();
 
