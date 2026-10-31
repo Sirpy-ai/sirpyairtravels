@@ -1,4 +1,4 @@
-<!-- {"title": "Fare Comparison — Top Fare Changes Today", "description": "Biggest fare drops and increases on Singapore ⇄ Trichy, Chennai and Coimbatore flights since the last update. Updated automatically every day.", "nav": "blog"} -->
+<!-- {"title": "Fare Comparison — Top Fare Changes Today", "description": "Biggest fare drops and increases on Singapore ⇄ Trichy, Chennai and Coimbatore flights since the last update, plus the best 2–5 day round trips. Updated automatically every day.", "nav": "blog"} -->
 <section class="page-head">
   <div class="wrap">
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/blog">Blog</a><span>/</span>Fare Comparison</nav>
@@ -9,13 +9,36 @@
 
 <section class="section">
   <div class="wrap">
-    <p class="muted small">Comparing <b data-prev-updated>—</b> with <b data-fares-updated>—</b>. Updated automatically every day.</p>
-    <div class="filters" id="changeTabs" role="group" aria-label="Airport">
-      <button class="filter" type="button" data-chg="TRZ" aria-pressed="true">Trichy</button>
-      <button class="filter" type="button" data-chg="MAA" aria-pressed="false">Chennai</button>
-      <button class="filter" type="button" data-chg="CJB" aria-pressed="false">Coimbatore</button>
-      <button class="filter" type="button" data-chg="all" aria-pressed="false">All airports</button>
+    <p class="muted small cmp-info">Comparing today's fares (<b data-fares-updated>—</b>) with the previous update (<b data-prev-updated>—</b>). Fares listed up to <b data-fares-last>—</b>. Updated automatically every day.</p>
+
+    <div class="cmp-bar">
+      <div class="cmp-group">
+        <span class="cmp-label">Airport</span>
+        <div class="filters" id="changeTabs" role="group" aria-label="Airport">
+          <button class="filter" type="button" data-chg="all" aria-pressed="true">All airports</button>
+          <button class="filter" type="button" data-chg="TRZ" aria-pressed="false">Trichy</button>
+          <button class="filter" type="button" data-chg="MAA" aria-pressed="false">Chennai</button>
+          <button class="filter" type="button" data-chg="CJB" aria-pressed="false">Coimbatore</button>
+        </div>
+      </div>
+      <div class="cmp-group">
+        <span class="cmp-label">Direction</span>
+        <div class="filters" id="dirTabs" role="group" aria-label="Direction">
+          <button class="filter" type="button" data-dir="all" aria-pressed="true">Both ways</button>
+          <button class="filter" type="button" data-dir="SIN" aria-pressed="false">From Singapore</button>
+          <button class="filter" type="button" data-dir="IN" aria-pressed="false">To Singapore</button>
+        </div>
+      </div>
+      <div class="cmp-group cmp-rt">
+        <label class="switch"><input type="checkbox" id="rtToggle"><span class="switch-ui" aria-hidden="true"></span><b>Best round trips</b><small>2–5 days return</small></label>
+        <div class="filters" id="rtMode" role="group" aria-label="Return airport" hidden>
+          <button class="filter" type="button" data-rt="same" aria-pressed="true">Same city return</button>
+          <button class="filter" type="button" data-rt="open" aria-pressed="false">Different city return</button>
+          <button class="filter" type="button" data-rt="any" aria-pressed="false">Any</button>
+        </div>
+      </div>
     </div>
+
     <div id="fareChanges" aria-live="polite"><p class="loading">Comparing with the previous update…</p></div>
     <p class="disclaimer">Fares include our service fee and baggage, and change with availability. Book quickly: the fare shown is the price today.</p>
   </div>

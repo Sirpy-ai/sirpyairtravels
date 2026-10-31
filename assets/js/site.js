@@ -566,62 +566,157 @@
   initWeekly();
 
   /* ---------- Biggest fare increases / drops vs the previous update ---------- */
+  const TN_AIRPORTS = ['TRZ', 'MAA', 'CJB'];
+  const city = (code) => (SIRPY.AIRPORTS[code] ? SIRPY.AIRPORTS[code].city : code);
+  const dayLabel = (d) => fmtDate(d, { weekday: 'short', day: 'numeric', month: 'short' });
+
+  /* Best round trips with a 2–5 day return gap. Uses the cheapest flight per
+     date and sector; trips that cost exactly the same (same sectors and
+     airlines) become one fare with all their dates listed under it. */
+  function bestRoundTrips(flights, { tn, dir, mode }) {
+    const best = new Map();
+    for (const f of flights) {
+      const k = `${f.date}|${f.from}|${f.to}`;
+      const b = best.get(k);
+      if (!b || f.p.sgd < b.p.sgd) best.set(k, f);
+    }
+    const byDate = new Map();
+    for (const f of best.values()) {
+      if (!byDate.has(f.date)) byDate.set(f.date, []);
+      byDate.get(f.date).push(f);
+    }
+    const tnOk = (a) => tn === 'all' || a === tn;
+    const groups = new Map();
+    for (const o of best.values()) {
+      const fromSin = o.from === 'SIN' && TN_AIRPORTS.includes(o.to);
+      const toSin = o.to === 'SIN' && TN_AIRPORTS.includes(o.from);
+      if (!(fromSin && dir !== 'IN' && tnOk(o.to)) && !(toSin && dir !== 'SIN' && tnOk(o.from))) continue;
+      for (let gap = 2; gap <= 5; gap++) {
+        for (const r of byDate.get(addDays(o.date, gap)) || []) {
+          /* The return goes back to where the trip started. */
+          if (fromSin ? !(r.to === 'SIN' && TN_AIRPORTS.includes(r.from)) : !(r.from === 'SIN' && TN_AIRPORTS.includes(r.to))) continue;
+          const same = fromSin ? r.from === o.to : r.to === o.from;
+          if ((mode === 'same' && !same) || (mode === 'open' && same)) continue;
+          const p = sumPrices(o.p, r.p);
+          const key = `${o.from}-${o.to}|${r.from}-${r.to}|${o.airline}|${r.airline}|${p.sgd}`;
+          if (!groups.has(key)) groups.set(key, { o, r, same, p, trips: [] });
+          groups.get(key).trips.push({ out: o.date, ret: r.date, gap });
+        }
+      }
+    }
+    return [...groups.values()]
+      .map((g) => ({ ...g, trips: g.trips.sort((a, b) => a.out.localeCompare(b.out) || a.gap - b.gap) }))
+      .sort((a, b) => a.p.sgd - b.p.sgd || a.trips[0].out.localeCompare(b.trips[0].out));
+  }
+
   async function initChanges() {
     const box = $('#fareChanges');
     if (!box) return;
     try {
-      const [{ flights }, prev] = await Promise.all([loadFares(), loadPrevFares()]);
-      if (!prev) { box.innerHTML = '<p class="loading">Price changes will appear after the next fare update.</p>'; return; }
-      $$('[data-prev-updated]').forEach((el) => { el.textContent = fmtDate(prev.updated, { day: 'numeric', month: 'long' }); });
+      const [{ flights, updated }, prev] = await Promise.all([loadFares(), loadPrevFares()]);
+      setUpdated(updated);
+      const last = flights.reduce((m, f) => (f.date > m ? f.date : m), '');
+      $$('[data-fares-last]').forEach((el) => { el.textContent = last ? fmtDate(last, { day: 'numeric', month: 'long', year: 'numeric' }) : '—'; });
+      if (prev) $$('[data-prev-updated]').forEach((el) => { el.textContent = fmtDate(prev.updated, { day: 'numeric', month: 'long', year: 'numeric' }); });
 
       /* Match each flight to the previous snapshot: same date, route and
          airline, departing within 45 minutes (schedules drift a little). */
-      const byKey = new Map();
-      for (const f of prev.flights) {
-        const k = `${f.date}|${f.from}|${f.to}|${f.airline}`;
-        if (!byKey.has(k)) byKey.set(k, []);
-        byKey.get(k).push(f);
-      }
-      const mins = (t) => +t.slice(0, 2) * 60 + +t.slice(3);
       const changes = [];
-      for (const f of flights) {
-        const cands = byKey.get(`${f.date}|${f.from}|${f.to}|${f.airline}`);
-        if (!cands) continue;
-        const old = cands.reduce((a, b) => (Math.abs(mins(b.dep) - mins(f.dep)) < Math.abs(mins(a.dep) - mins(f.dep)) ? b : a));
-        if (Math.abs(mins(old.dep) - mins(f.dep)) > 45) continue;
-        const diff = f.fare - old.fare;
-        if (Math.abs(diff) < 1) continue;
-        changes.push({ f, oldSgd: f.p.sgd - diff, diff, pct: Math.round((diff / old.fare) * 100) });
+      if (prev) {
+        const byKey = new Map();
+        for (const f of prev.flights) {
+          const k = `${f.date}|${f.from}|${f.to}|${f.airline}`;
+          if (!byKey.has(k)) byKey.set(k, []);
+          byKey.get(k).push(f);
+        }
+        const mins = (t) => +t.slice(0, 2) * 60 + +t.slice(3);
+        for (const f of flights) {
+          const cands = byKey.get(`${f.date}|${f.from}|${f.to}|${f.airline}`);
+          if (!cands) continue;
+          const old = cands.reduce((a, b) => (Math.abs(mins(b.dep) - mins(f.dep)) < Math.abs(mins(a.dep) - mins(f.dep)) ? b : a));
+          if (Math.abs(mins(old.dep) - mins(f.dep)) > 45) continue;
+          const diff = f.fare - old.fare;
+          if (Math.abs(diff) < 1) continue;
+          changes.push({ f, oldSgd: f.p.sgd - diff, diff, pct: Math.round((diff / old.fare) * 100) });
+        }
       }
 
-      const tabs = $('#changeTabs');
-      let filter = 'TRZ';
-      const render = () => {
-        const pool = changes.filter((c) => filter === 'all' || c.f.from === filter || c.f.to === filter);
+      const state = { tn: 'all', dir: 'all', rt: false, mode: 'same' };
+      const dirOk = (f) => state.dir === 'all' || (state.dir === 'SIN' ? f.from === 'SIN' : f.to === 'SIN');
+      const tnOk = (f) => state.tn === 'all' || f.from === state.tn || f.to === state.tn;
+
+      const changeRow = (c) => {
+        const q = new URLSearchParams({ route: `${c.f.from}-${c.f.to}`, date: c.f.date });
+        return `<a class="chg-row" href="/flights?${q}">
+          ${logoImg(c.f.airline, 32)}
+          <span class="chg-main"><b>${esc(city(c.f.from))} → ${esc(city(c.f.to))}</b>
+            <small>${dayLabel(c.f.date)} · ${esc(airlineName(c.f.airline))} ${fmt12(c.f.dep)}</small></span>
+          <span class="chg-price"><s>${money.sgd(c.oldSgd)}</s> <b>${money.sgd(c.f.p.sgd)}</b>
+            <small class="${c.diff > 0 ? 'up' : 'down'}">${c.diff > 0 ? '▲ +' : '▼ −'}${money.sgd(Math.abs(Math.round(c.diff)))} (${c.diff > 0 ? '+' : ''}${c.pct}%)</small></span>
+        </a>`;
+      };
+      const renderChanges = () => {
+        if (!prev) return '<p class="loading">Price changes will appear after the next fare update.</p>';
+        const pool = changes.filter((c) => tnOk(c.f) && dirOk(c.f));
         const up = [...pool].sort((a, b) => b.diff - a.diff).filter((c) => c.diff > 0).slice(0, 10);
         const down = [...pool].sort((a, b) => a.diff - b.diff).filter((c) => c.diff < 0).slice(0, 10);
-        const row = (c) => {
-          const q = new URLSearchParams({ route: `${c.f.from}-${c.f.to}`, date: c.f.date });
-          return `<a class="chg-row" href="/flights?${q}">
-            ${logoImg(c.f.airline, 32)}
-            <span class="chg-main"><b>${esc(SIRPY.AIRPORTS[c.f.from].city)} → ${esc(SIRPY.AIRPORTS[c.f.to].city)}</b>
-              <small>${fmtDate(c.f.date, { weekday: 'short', day: 'numeric', month: 'short' })} · ${esc(airlineName(c.f.airline))} ${fmt12(c.f.dep)}</small></span>
-            <span class="chg-price"><s>${money.sgd(c.oldSgd)}</s> <b>${money.sgd(c.f.p.sgd)}</b>
-              <small class="${c.diff > 0 ? 'up' : 'down'}">${c.diff > 0 ? '▲ +' : '▼ −'}${money.sgd(Math.abs(Math.round(c.diff)))} (${c.diff > 0 ? '+' : ''}${c.pct}%)</small></span>
-          </a>`;
-        };
-        const empty = '<p class="loading">No changes for this airport.</p>';
-        box.innerHTML = `<div class="grid-2">
-          <div class="card chg-col"><h3 class="chg-h down">▼ Biggest price drops</h3>${down.map(row).join('') || empty}</div>
-          <div class="card chg-col"><h3 class="chg-h up">▲ Biggest price increases</h3>${up.map(row).join('') || empty}</div>
+        const empty = '<p class="loading">No changes for this filter.</p>';
+        return `<div class="grid-2">
+          <div class="card chg-col"><h3 class="chg-h down">▼ Biggest price drops</h3>${down.map(changeRow).join('') || empty}</div>
+          <div class="card chg-col"><h3 class="chg-h up">▲ Biggest price increases</h3>${up.map(changeRow).join('') || empty}</div>
         </div>`;
       };
-      if (tabs) {
+
+      const tripLink = (g, t) => {
+        if (g.same) {
+          const q = new URLSearchParams({ route: `${g.o.from}-${g.o.to}`, date: t.out, trip: 'rt', ret: t.ret });
+          return `/flights?${q}`;
+        }
+        return wa(`Hi Sirpy Air Travels, please book this round trip:\n${city(g.o.from)} → ${city(g.o.to)} on ${dayLabel(t.out)} (${airlineName(g.o.airline)})\n${city(g.r.from)} → ${city(g.r.to)} on ${dayLabel(t.ret)} (${airlineName(g.r.airline)})\nFare shown: ${money.sgd(g.p.sgd)} per adult`);
+      };
+      const MAX_DATES = 12;
+      const rtCard = (g) => {
+        const ext = g.same ? '' : ' target="_blank" rel="noopener"';
+        const chips = g.trips.slice(0, MAX_DATES).map((t) => `<a class="rt-date" href="${esc(tripLink(g, t))}"${ext}>${dayLabel(t.out)} → ${dayLabel(t.ret)}<small>${t.gap} days</small></a>`).join('');
+        const more = g.trips.length > MAX_DATES ? `<span class="rt-more">+${g.trips.length - MAX_DATES} more dates</span>` : '';
+        const airlines = g.o.airline === g.r.airline ? esc(airlineName(g.o.airline)) : `${esc(airlineName(g.o.airline))} + ${esc(airlineName(g.r.airline))}`;
+        return `<div class="card rt-card">
+          <div class="rt-top">
+            <span class="rt-logos">${logoImg(g.o.airline, 32)}${g.r.airline !== g.o.airline ? logoImg(g.r.airline, 32) : ''}</span>
+            <span class="rt-route"><b>${esc(city(g.o.from))} → ${esc(city(g.o.to))} → ${esc(city(g.r.to))}</b>
+              <small>${g.same ? 'Same city return' : g.o.from === 'SIN' ? `Return from ${esc(city(g.r.from))}` : `Return to ${esc(city(g.r.to))}`} · ${airlines}</small></span>
+            <span class="rt-price"><b>${money.sgd(g.p.sgd)}</b><small>${money.inr(g.p.inr)} · round trip per adult</small></span>
+          </div>
+          <p class="rt-count">${g.trips.length === 1 ? 'Available on 1 date:' : `Same fare on ${g.trips.length} dates:`}</p>
+          <div class="rt-dates">${chips}${more}</div>
+        </div>`;
+      };
+      const renderTrips = () => {
+        const groups = bestRoundTrips(flights, state).slice(0, 12);
+        if (!groups.length) return '<p class="loading">No round trips with a 2–5 day return for this filter.</p>';
+        return `<div class="rt-list">${groups.map(rtCard).join('')}</div>`;
+      };
+
+      const render = () => { box.innerHTML = state.rt ? renderTrips() : renderChanges(); };
+      const bindTabs = (id, attr, apply) => {
+        const tabs = $(id);
+        if (!tabs) return;
         tabs.addEventListener('click', (e) => {
-          const b = e.target.closest('[data-chg]');
+          const b = e.target.closest(`[${attr}]`);
           if (!b) return;
-          filter = b.dataset.chg;
-          $$('[data-chg]', tabs).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+          $$(`[${attr}]`, tabs).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+          apply(b.getAttribute(attr));
+          render();
+        });
+      };
+      bindTabs('#changeTabs', 'data-chg', (v) => { state.tn = v; });
+      bindTabs('#dirTabs', 'data-dir', (v) => { state.dir = v; });
+      bindTabs('#rtMode', 'data-rt', (v) => { state.mode = v; });
+      const toggle = $('#rtToggle');
+      if (toggle) {
+        toggle.addEventListener('change', () => {
+          state.rt = toggle.checked;
+          $('#rtMode').hidden = !state.rt;
           render();
         });
       }
@@ -1299,15 +1394,12 @@
     { cat: 'news', tag: 'Study', title: 'Study in Singapore', text: 'Universities and colleges, student pass help, accommodation and flights.', href: '/study-in-singapore', img: '/assets/img/tours/singapore-malaysia.webp' },
     { cat: 'tips', tag: 'Guide', title: 'Travel Tips for Tamil Nadu and Singapore', text: 'SG Arrival Card, baggage, documents and airport timings.', href: '/travel-tips', img: '/assets/img/site/blog-tips.webp' }
   ];
-  const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
   const feedItem = (it) => `<a class="feed-item" href="${esc(it.href)}">
-      <div class="feed-img">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy">` : ''}</div>
-      <div class="feed-body">
-        <div class="feed-meta"><span class="feed-tag">${esc(it.tag)}</span>${it.date ? `<span class="feed-date">${esc(it.date)}</span>` : ''}</div>
-        <h3>${esc(it.title)}</h3>
-        ${it.text ? `<p>${esc(it.text)}</p>` : ''}
-        <span class="more">Read more ${ARROW}</span>
-      </div></a>`;
+      <div class="feed-img">${it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy">` : ''}${it.live ? '<span class="feed-live">Live</span>' : ''}</div>
+      <div class="feed-meta">${esc(it.tag)}${it.date ? ` ${esc(it.date)}` : ''}</div>
+      <h3>${esc(it.title)}</h3>
+      ${it.text ? `<p>${esc(it.text)}</p>` : ''}
+    </a>`;
 
   async function initBlogList() {
     const grid = $('#postGrid');
@@ -1324,7 +1416,7 @@
 
     let updated = null;
     try { updated = (await loadFares()).updated; } catch { /* no date label */ }
-    const stamp = updated ? `Updated ${fmtDate(updated, { day: 'numeric', month: 'short' })}` : 'Updated daily';
+    const stamp = updated ? fmtDate(updated, { day: 'numeric', month: 'long', year: 'numeric' }) : 'Updated daily';
     items = FEED_PAGES.map((f) => ({ ...f, date: f.live ? stamp : '' }));
     render('all');
 

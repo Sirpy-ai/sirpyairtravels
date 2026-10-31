@@ -19,13 +19,16 @@
     <div class="toolbar-row">
       <label>Month <select id="alMonth"><option value="">All months</option></select></label>
       <label>Route <select id="alRoute"><option value="">All routes</option></select></label>
+      <label class="switch al-switch"><input type="checkbox" id="alRt"><span class="switch-ui" aria-hidden="true"></span><b>Round trip</b><small>2–5 days return</small></label>
+      <label id="alRtModeWrap" hidden>Return <select id="alRtMode"><option value="same">Same city</option><option value="any">Any city</option></select></label>
     </div>
     <p class="muted small" id="alNote" aria-live="polite"></p>
     <div class="grid-4" id="alCards"></div>
     <div class="al-table-wrap"><table class="al-table">
-      <thead><tr><th>Airline</th><th>Route</th><th>Flight date</th><th>Departs</th><th>Lowest fare</th><th class="hide-m">Seen</th><th></th></tr></thead>
-      <tbody id="alBody"><tr><td colspan="7" class="loading">Loading fares…</td></tr></tbody>
+      <thead><tr><th>Airline</th><th>Route</th><th>Lowest fare</th><th>Same fare on these dates</th><th class="hide-m">Seen</th><th></th></tr></thead>
+      <tbody id="alBody"><tr><td colspan="6" class="loading">Loading fares…</td></tr></tbody>
     </table></div>
+    <div class="rt-list" id="alTrips" hidden></div>
     <p class="disclaimer">Fares include our service fee and baggage, and change with availability. Lowest fares may no longer be on sale: check the live price on the search page.</p>
   </div>
 </section>
